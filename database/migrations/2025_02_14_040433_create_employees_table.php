@@ -13,36 +13,65 @@ return new class extends Migration {
         Schema::create('employees', function (Blueprint $table) {
             $table->id();
 
-            $table->string('employee_number')->unique();
-            $table->string('biometrics_id')->nullable();
             $table->string('photo')->nullable();
-            $table->foreignId('operating_unit_id')->constrained('operating_units');
-            $table->foreignId('department_id')->nullable()->constrained('departments');
-            $table->string('employee_type')->nullable();
-            $table->foreignId('job_status_id')->nullable()->constrained('job_statuses');
-            $table->foreignId('position_id')->nullable()->constrained('positions');
-            $table->string('parenthetical_title')->nullable();
 
-            $table->foreignId('salary_step_id')->nullable()->constrained('salary_steps');
-            $table->decimal('custom_hourly_rate')->nullable();
-            $table->decimal('custom_daily_rate')->nullable();
-            $table->date('date_hired')->nullable();
-            $table->date('date_separated')->nullable();
-            $table->string('separation_reason')->nullable();
-            $table->text('termination_notes')->nullable();
+            // Personal information
+            $table->string('employee_number')->unique();
+            $table->string('emp_last_name');
+            $table->string('emp_first_name');
+            $table->string('emp_middle_name')->nullable();
+            $table->string('emp_suffix')->nullable();
+            $table->date('emp_birthday')->nullable();
 
-            // PDF related columns
-            $table->foreignId('immediate_supervisor_id')->nullable()->constrained('employees')->nullOnDelete();
-            $table->foreignId('higher_supervisor_id')->nullable()->constrained('employees')->nullOnDelete();
+            $table->foreignId('emp_nationality_id')
+                ->nullable()
+                ->constrained('nationalities')
+                ->nullOnDelete();
 
-            $table->foreignId('immediate_supervisor_designation')->nullable()->constrained('designations')->nullOnDelete();
-            $table->foreignId('higher_supervisor_designation')->nullable()->constrained('designations')->nullOnDelete();
+            $table->string('emp_sex');
+            $table->string('emp_marital_status')->nullable();
 
-            // PDS related tables
-            $table->string('gov_issued_id')->nullable();
-            $table->string('gov_id_number')->nullable();
-            $table->date('date_issue')->nullable();
-            $table->string('place_issue')->nullable();
+            // Contact details
+            $table->string('street1')->nullable();
+            $table->string('street2')->nullable();
+            $table->string('city')->nullable();
+            $table->string('province')->nullable();
+            $table->string('zip_code')->nullable();
+            $table->string('country_id')->nullable();
+            $table->string('home_telephone_no')->nullable();
+            $table->string('mobile_no')->nullable();
+            $table->string('work_no')->nullable();
+            $table->string('work_email')->nullable();
+            $table->string('other_email')->nullable();
+
+            // Job details
+            $table->date('joined_date')->nullable();
+
+            $table->foreignId('job_title_id')
+                ->nullable()
+                ->constrained('job_titles')
+                ->nullOnDelete();
+
+            $table->foreignId('department_id')
+                ->nullable()
+                ->constrained('departments')
+                ->nullOnDelete();
+
+            $table->foreignId('location_id')
+                ->nullable()
+                ->constrained('locations')
+                ->nullOnDelete();
+
+            $table->foreignId('employment_status_id')
+                ->nullable()
+                ->constrained('employment_statuses')
+                ->nullOnDelete();
+
+            $table->foreignId('supervisor_id')
+                ->nullable()
+                ->constrained('employees')
+                ->nullOnDelete();
+
             $table->timestamps();
         });
     }

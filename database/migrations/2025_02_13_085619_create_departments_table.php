@@ -14,7 +14,6 @@ return new class extends Migration {
             $table->id();
             $table->string('name');
             $table->string('shortcut');
-            $table->foreignId('operating_unit_id')->constrained('operating_units');
             $table->foreignId('parent_id')
                 ->nullable()
                 ->constrained('departments')

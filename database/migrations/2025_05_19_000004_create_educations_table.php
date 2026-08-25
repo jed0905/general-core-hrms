@@ -10,10 +10,16 @@ return new class extends Migration {
      */
     public function up(): void
     {
-        Schema::create('other_info_organizations', function (Blueprint $table) {
+        Schema::create('educations', function (Blueprint $table) {
             $table->id();
             $table->foreignId('employee_id')->constrained('employees');
-            $table->string('organization_name');
+            $table->string('level')->nullable();
+            $table->string('institute')->nullable();
+            $table->string('major_specialization')->nullable();
+            $table->year('year')->nullable();
+            $table->string('gpa_score')->nullable();
+            $table->date('start_date')->nullable();
+            $table->date('end_date')->nullable();
             $table->timestamps();
         });
     }
@@ -23,6 +29,6 @@ return new class extends Migration {
      */
     public function down(): void
     {
-        Schema::dropIfExists('other_info_organizations');
+        Schema::dropIfExists('educations');
     }
 };

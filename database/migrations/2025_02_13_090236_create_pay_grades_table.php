@@ -10,12 +10,9 @@ return new class extends Migration {
      */
     public function up(): void
     {
-        Schema::create('positions', function (Blueprint $table) {
+        Schema::create('pay_grades', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('operating_unit_id')->constrained('operating_units');
-            $table->foreignId('government_positions_id')->constrained('government_positions');
-            $table->string('plantilla_item_number')->nullable();
-            $table->string('salary_grade_id')->nullable();
+            $table->string('name')->unique();
             $table->timestamps();
         });
     }
@@ -25,6 +22,6 @@ return new class extends Migration {
      */
     public function down(): void
     {
-        Schema::dropIfExists('positions');
+        Schema::dropIfExists('pay_grades');
     }
 };

@@ -10,15 +10,17 @@ return new class extends Migration {
      */
     public function up(): void
     {
-        Schema::create('operating_units', function (Blueprint $table) {
+        Schema::create('organization_general_information', function (Blueprint $table) {
             $table->id();
-            $table->string('prefix_id')->unique();
-            $table->string('name')->unique();
-            $table->string('shortcut')->unique();
-            $table->string('barangay');
-            $table->string('city_municipality');
+            $table->string('phone');
+            $table->string('email');
+            $table->string('country');
             $table->string('province');
-            $table->string('zip');
+            $table->string('city');
+            $table->string('zip_code');
+            $table->string('street1');
+            $table->string('street2');
+            $table->string('note');
             $table->timestamps();
         });
     }
@@ -28,6 +30,6 @@ return new class extends Migration {
      */
     public function down(): void
     {
-        Schema::dropIfExists('operating_units');
+        Schema::dropIfExists('organization_general_information');
     }
 };

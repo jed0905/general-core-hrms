@@ -10,11 +10,9 @@ return new class extends Migration {
      */
     public function up(): void
     {
-        Schema::create('other_info_non_academic_distinctions', function (Blueprint $table) {
+        Schema::create('nationalities', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('employee_id')->constrained('employees');
-            $table->string('distinction');
-            $table->timestamps();
+            $table->string('name');
         });
     }
 
@@ -23,6 +21,6 @@ return new class extends Migration {
      */
     public function down(): void
     {
-        Schema::dropIfExists('other_info_non_academic_distinctions');
+        Schema::dropIfExists('nationalities');
     }
 };

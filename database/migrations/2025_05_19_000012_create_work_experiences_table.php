@@ -13,14 +13,11 @@ return new class extends Migration {
         Schema::create('work_experiences', function (Blueprint $table) {
             $table->id();
             $table->foreignId('employee_id')->constrained('employees');
-            $table->string('from');
-            $table->string('to');
-            $table->string('position_title');
-            $table->string('department_agency');
-            $table->string('monthly_salary');
-            $table->string('salary_grade');
-            $table->string('status_of_appointment');
-            $table->string('government_service');
+            $table->string('company');
+            $table->string('job_title');
+            $table->date('from');
+            $table->date('to');
+            $table->string('notes');
             $table->timestamps();
         });
     }

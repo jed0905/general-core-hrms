@@ -10,11 +10,12 @@ return new class extends Migration {
      */
     public function up(): void
     {
-        Schema::create('salary_steps', function (Blueprint $table) {
+        Schema::create('pay_grade_currencies', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('salary_grade_id')->constrained('salary_grades');
-            $table->string('salary_step_no');
-            $table->string('amount');
+            $table->foreignId('pay_grade_id')->constrained('pay_grades');
+            $table->string('currency');
+            $table->double('minimum_salary');
+            $table->double('maximum_salary');
             $table->timestamps();
         });
     }
@@ -24,6 +25,6 @@ return new class extends Migration {
      */
     public function down(): void
     {
-        Schema::dropIfExists('salary_steps');
+        Schema::dropIfExists('pay_grade_currencies');
     }
 };
