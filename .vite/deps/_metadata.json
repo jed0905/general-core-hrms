@@ -1,0 +1,101 @@
+{
+  "hash": "de4b2f48",
+  "browserHash": "0ef988b5",
+  "optimized": {
+    "alpinejs": {
+      "src": "../../node_modules/alpinejs/dist/module.esm.js",
+      "file": "alpinejs.js",
+      "fileHash": "561cc0c7",
+      "needsInterop": false
+    },
+    "vue": {
+      "src": "../../node_modules/vue/dist/vue.runtime.esm-bundler.js",
+      "file": "vue.js",
+      "fileHash": "3ffb1a93",
+      "needsInterop": false
+    },
+    "@inertiajs/vue3": {
+      "src": "../../node_modules/@inertiajs/vue3/dist/index.esm.js",
+      "file": "@inertiajs_vue3.js",
+      "fileHash": "9be1bb41",
+      "needsInterop": false
+    },
+    "laravel-vite-plugin/inertia-helpers": {
+      "src": "../../node_modules/laravel-vite-plugin/inertia-helpers/index.js",
+      "file": "laravel-vite-plugin_inertia-helpers.js",
+      "fileHash": "4959ae61",
+      "needsInterop": false
+    },
+    "vuetify": {
+      "src": "../../node_modules/vuetify/lib/framework.mjs",
+      "file": "vuetify.js",
+      "fileHash": "7b06ab79",
+      "needsInterop": false
+    },
+    "vuetify/components": {
+      "src": "../../node_modules/vuetify/lib/components/index.mjs",
+      "file": "vuetify_components.js",
+      "fileHash": "9f9e05b7",
+      "needsInterop": false
+    },
+    "vuetify/labs/components": {
+      "src": "../../node_modules/vuetify/lib/labs/components.mjs",
+      "file": "vuetify_labs_components.js",
+      "fileHash": "1e26b095",
+      "needsInterop": false
+    },
+    "vuetify/directives": {
+      "src": "../../node_modules/vuetify/lib/directives/index.mjs",
+      "file": "vuetify_directives.js",
+      "fileHash": "2c218d2f",
+      "needsInterop": false
+    },
+    "vuetify/iconsets/mdi": {
+      "src": "../../node_modules/vuetify/lib/iconsets/mdi.mjs",
+      "file": "vuetify_iconsets_mdi.js",
+      "fileHash": "f78b3f3b",
+      "needsInterop": false
+    },
+    "vue-toastification": {
+      "src": "../../node_modules/vue-toastification/dist/index.mjs",
+      "file": "vue-toastification.js",
+      "fileHash": "9a47070b",
+      "needsInterop": false
+    },
+    "axios": {
+      "src": "../../node_modules/axios/index.js",
+      "file": "axios.js",
+      "fileHash": "9c1b48d3",
+      "needsInterop": false
+    }
+  },
+  "chunks": {
+    "chunk-TFJJYMRZ": {
+      "file": "chunk-TFJJYMRZ.js"
+    },
+    "chunk-PU2CW3NP": {
+      "file": "chunk-PU2CW3NP.js"
+    },
+    "chunk-ZBWQYIMS": {
+      "file": "chunk-ZBWQYIMS.js"
+    },
+    "chunk-GJSAIMLY": {
+      "file": "chunk-GJSAIMLY.js"
+    },
+    "chunk-VFMJEIIN": {
+      "file": "chunk-VFMJEIIN.js"
+    },
+    "chunk-3CODNLVM": {
+      "file": "chunk-3CODNLVM.js"
+    },
+    "chunk-ZDQHOJIR": {
+      "file": "chunk-ZDQHOJIR.js"
+    },
+    "chunk-RS55Z2JH": {
+      "file": "chunk-RS55Z2JH.js"
+    },
+    "chunk-5WWUZCGV": {
+      "file": "chunk-5WWUZCGV.js"
+    }
+  }
+}
