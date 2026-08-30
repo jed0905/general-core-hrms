@@ -27,12 +27,7 @@ use App\Models\User;
 use App\Models\Vocational;
 use App\Models\VoluntaryWork;
 use App\Models\WorkExperience;
-use App\Observers\CivilServiceEligibilityObserver;
 use App\Observers\DepartmentObserver;
-use App\Observers\DesignationObserver;
-use App\Observers\ElementaryObserver;
-use App\Observers\EmployeeAdditionalInformationObserver;
-use App\Observers\EmployeeLeaveCreditsHistoryObserver;
 use App\Observers\EmployeeObserver;
 use App\Observers\FamilyBackgroundObserver;
 use App\Observers\GraduateStudyObserver;
@@ -87,31 +82,11 @@ class EventServiceProvider extends ServiceProvider
      */
     protected $observers = [
         // For Audit Trails
-        CivilServiceEligibility::class => CivilServiceEligibilityObserver::class,
         Department::class => DepartmentObserver::class,
-        Designation::class => DesignationObserver::class,
-        Elementary::class => ElementaryObserver::class,
-        EmployeeAdditionalInformation::class => EmployeeAdditionalInformationObserver::class,
         Employee::class => EmployeeObserver::class,
-        FamilyBackground::class => FamilyBackgroundObserver::class,
-        GraduateStudy::class => GraduateStudyObserver::class,
-        JobStatus::class => JobStatusObserver::class,
-        LearningDevelopment::class => LearningDevelopmentObserver::class,
         LeaveApplication::class => LeaveApplicationObserver::class,
-        OperatingUnit::class => OperatingUnitObserver::class,
-        OtherInfoNonAcademicDistinction::class => OtherInfoNonAcademicDistinctionObserver::class,
-        OtherInfoOrganization::class => OtherInfoOrganizationObserver::class,
-        OtherInfoSpecialSkills::class => OtherInfoSpecialSkillsObserver::class,
-        PersonalInformation::class => PersonalInformationObserver::class,
-        Position::class => PositionObserver::class,
-        SalaryGrade::class => SalaryGradeObserver::class,
-        SalaryStep::class => SalaryStepObserver::class,
-        Secondary::class => SecondaryObserver::class,
         User::class => UserObserver::class,
-        Vocational::class => VocationalObserver::class,
-        VoluntaryWork::class => VoluntaryWorkObserver::class,
         WorkExperience::class => WorkExperienceObserver::class,
-        EmployeeLeaveCreditsHistory::class => EmployeeLeaveCreditsHistoryObserver::class,
     ];
 
     /**

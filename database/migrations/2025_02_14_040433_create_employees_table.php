@@ -44,6 +44,9 @@ return new class extends Migration {
             $table->string('work_email')->nullable();
             $table->string('other_email')->nullable();
 
+            // E-Signature
+            $table->string('e_signature_path')->nullable();
+
             // Job details
             $table->date('joined_date')->nullable();
 
@@ -66,6 +69,8 @@ return new class extends Migration {
                 ->nullable()
                 ->constrained('employment_statuses')
                 ->nullOnDelete();
+
+            $table->string('status')->default('active');
 
             $table->foreignId('supervisor_id')
                 ->nullable()

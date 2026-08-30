@@ -11,8 +11,12 @@ class Shift extends Model
 
     protected $fillable = [
         'name',
-        'start_time',
-        'end_time'
+        'code',
+        'description',
+        'is_overnight',
+        'is_flexible',
+        'required_hours',
+        'is_active'
     ];
 
     public function shiftSchedule()

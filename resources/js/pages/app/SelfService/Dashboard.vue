@@ -1,161 +1,423 @@
+```vue
 <template>
-  <v-container fluid>
+  <v-container fluid class="pa-4 pa-md-6">
+    <!-- Header -->
+    <div class="mb-6">
+      <div class="d-flex align-center justify-space-between flex-wrap ga-3">
+        <div>
+          <div class="text-h5 text-md-h4 font-weight-bold">
+            Good afternoon, {{ employeeName }} 👋
+          </div>
+
+          <div class="text-body-2 text-grey-darken-1 mt-1">
+            {{ currentDate }}
+          </div>
+        </div>
+
+        <v-chip
+          color="starbucks-green"
+          variant="tonal"
+          prepend-icon="mdi-account-check"
+        >
+          Employee Self-Service
+        </v-chip>
+      </div>
+    </div>
+
+    <!-- Today's Workday -->
     <v-row>
-      <!-- Quick Launch Card -->
-      <v-col cols="12" lg="3" md="12">
-        <v-card class="pa-4" rounded="xl" elevation="4">
-          <div class="d-flex align-center mb-4">
-            <v-icon class="mr-2" color="starbucks-green"
-              >mdi-lightning-bolt</v-icon
-            >
-            <h3 class="text-h6 font-weight-medium">Quick Launch</h3>
-          </div>
+      <!-- Today's Schedule -->
+      <v-col cols="12" md="4">
+        <v-card class="dashboard-card" rounded="xl" elevation="2">
+          <v-card-item>
+            <template #prepend>
+              <v-avatar color="starbucks-green" variant="tonal" size="44">
+                <v-icon>mdi-calendar-clock</v-icon>
+              </v-avatar>
+            </template>
 
-          <div class="d-flex justify-space-around">
-            <!-- Unavailable -->
-            <!-- <div class="text-center">
-              <v-btn
-                icon="mdi-account-arrow-right"
-                size="large"
-                color="primary"
-                class="mb-2"
-                variant="outlined"
-              ></v-btn>
-              <div class="text-caption">Apply Leave</div>
-            </div> -->
+            <v-card-title class="font-weight-bold">
+              Today's Schedule
+            </v-card-title>
 
-            <!-- Unavialable -->
-            <!-- <div class="text-center">
-              <v-btn
-                icon="mdi-palm-tree"
-                size="large"
-                color="primary"
-                class="mb-2"
-                variant="outlined"
-              ></v-btn>
-              <div class="text-caption">My Leave</div>
-            </div> -->
+            <v-card-subtitle> Your assigned work schedule </v-card-subtitle>
+          </v-card-item>
 
-            <Link :href="route('self-service.my-dtr.index')">
-              <div class="text-center">
-                <v-btn
-                  icon="mdi-clock-check"
-                  size="large"
-                  color="starbucks-green"
-                  class="mb-2"
-                  variant="outlined"
-                ></v-btn>
-                <div class="text-caption">My Timesheet</div>
-              </div>
-            </Link>
-            <Link :href="route('self-service.my-profile.index')">
-              <div class="text-center">
-                <v-btn
-                  icon="mdi-account-cog"
-                  size="large"
-                  color="starbucks-green"
-                  class="mb-2"
-                  variant="outlined"
-                ></v-btn>
-                <div class="text-caption">My Profile</div>
-              </div>
-            </Link>
-          </div>
-        </v-card>
-      </v-col>
+          <v-card-text>
+            <div class="schedule-time">08:00 AM – 05:00 PM</div>
 
-      <!-- Time at Work Card -->
-      <v-col cols="12" lg="6" md="12">
-        <v-card class="pa-4" rounded="xl" elevation="4">
-          <div class="d-flex align-center mb-3">
-            <v-icon class="mr-2" color="starbucks-green">mdi-clock</v-icon>
-            <h3 class="text-h6 font-weight-medium">Time at Work</h3>
-          </div>
+            <div class="d-flex align-center mt-2">
+              <v-icon size="18" class="mr-2" color="grey-darken-1">
+                mdi-coffee
+              </v-icon>
 
-          <div class="d-flex align-center mb-4">
-            <v-avatar size="40" class="mr-3" color="starbucks-green">
-              <v-icon color="white" size="20">mdi-account</v-icon>
-            </v-avatar>
-            <div>
-              <!-- Time in/Time Out Actions -->
-              <div class="text-subtitle-2 font-weight-medium">Punched Out</div>
-              <div class="text-caption text-grey-600">
-                Punched Out: Jun 3rd at 03:50 PM (GMT 8)
-              </div>
+              <span class="text-body-2 text-grey-darken-1">
+                Break: 12:00 PM – 01:00 PM
+              </span>
             </div>
-          </div>
 
-          <div class="bg-grey-lighten-3 rounded-pill pa-3 mb-3">
-            <div class="d-flex align-center justify-space-between">
-              <div class="d-flex align-center">
-                <!-- Total Time Rendered For Today -->
-                <span class="text-h5 font-weight-bold mr-2">0h 0m</span>
-                <span class="text-subtitle-2 text-grey-600">Today</span>
-              </div>
-              <v-icon color="black" size="20" class="mr-5"
-                >mdi-timer-sand</v-icon
-              >
-            </div>
-          </div>
+            <v-divider class="my-4" />
 
-          <div class="mb-3">
-            <!-- Active Week -->
-            <div class="text-subtitle-2 mb-2">This Week (Aug 04 - Aug 10)</div>
             <div class="d-flex align-center">
-              <!-- Total Time Rendered For This Week -->
-              <span class="text-h6 font-weight-bold mr-2">0h 0m</span>
-            </div>
-          </div>
+              <v-icon size="18" class="mr-2" color="starbucks-green">
+                mdi-check-circle
+              </v-icon>
 
-          <!-- Weekly Progress Bar -->
-          <div class="d-flex justify-space-between">
-            <div
-              v-for="day in ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']"
-              :key="day"
-              class="text-center"
-            >
-              <div class="text-caption mb-1">{{ day }}</div>
-              <div
-                class="bg-grey-lighten-2 rounded"
-                style="width: 20px; height: 40px"
-              ></div>
+              <span class="text-body-2 font-weight-medium">
+                Regular Office Schedule
+              </span>
             </div>
-          </div>
+          </v-card-text>
         </v-card>
       </v-col>
 
-      <!-- My Actions Card -->
-      <!-- Actions done in HRMS like filling of leave application or checking dtr? -->
-      <!-- <v-col cols="12" sm="12" md="6">
-        <v-card class="pa-4" rounded="xl" elevation="4">
-          <div class="d-flex align-center mb-3">
-            <v-icon class="mr-2" color="primary">mdi-format-list-bulleted</v-icon>
-            <h3 class="text-h6 font-weight-medium">My Actions</h3>
-          </div>
+      <!-- Today's Attendance -->
+      <v-col cols="12" md="4">
+        <v-card class="dashboard-card" rounded="xl" elevation="2">
+          <v-card-item>
+            <template #prepend>
+              <v-avatar color="starbucks-green" variant="tonal" size="44">
+                <v-icon>mdi-clock-check-outline</v-icon>
+              </v-avatar>
+            </template>
 
-          <div class="text-center py-8">
-            <v-icon size="80" color="grey-lighten-1" class="mb-3">mdi-clipboard-text</v-icon>
-            <div class="text-subtitle-1 text-grey-600">No Pending Actions to Perform</div>
-          </div>
-        </v-card>
-      </v-col> -->
+            <v-card-title class="font-weight-bold">
+              Today's Attendance
+            </v-card-title>
 
-      <!-- Employees on Leave Today Card -->
-      <v-col cols="12" lg="3" md="12">
-        <v-card class="pa-4" rounded="xl" elevation="4">
-          <div class="d-flex align-center mb-3">
-            <v-icon class="mr-2" color="primary">mdi-briefcase</v-icon>
-            <h3 class="text-h6 font-weight-medium">Employees on Leave Today</h3>
-          </div>
+            <v-card-subtitle> Sunday, August 30 </v-card-subtitle>
+          </v-card-item>
 
-          <div class="text-center py-8">
-            <v-icon size="80" color="grey-lighten-1" class="mb-3"
-              >mdi-clipboard-text</v-icon
+          <v-card-text>
+            <div class="d-flex align-center mb-4">
+              <v-avatar size="48" color="starbucks-green" class="mr-3">
+                <v-icon color="white"> mdi-account-clock </v-icon>
+              </v-avatar>
+
+              <div>
+                <div class="text-subtitle-1 font-weight-bold">Punched Out</div>
+
+                <div class="text-caption text-grey-darken-1">
+                  Last punch: 05:03 PM
+                </div>
+              </div>
+            </div>
+
+            <div class="attendance-summary">
+              <div>
+                <div class="text-caption text-grey-darken-1">Time Worked</div>
+
+                <div class="text-h5 font-weight-bold">8h 03m</div>
+              </div>
+
+              <v-icon size="28" color="starbucks-green">
+                mdi-timer-check-outline
+              </v-icon>
+            </div>
+
+            <v-btn
+              block
+              variant="outlined"
+              color="starbucks-green"
+              class="mt-4"
+              :href="route('self-service.my-dtr.index')"
             >
-            <div class="text-subtitle-1 text-grey-600">
-              No Employees are on Leave Today
+              View My Timesheet
+            </v-btn>
+          </v-card-text>
+        </v-card>
+      </v-col>
+
+      <!-- Leave Balance -->
+      <v-col cols="12" md="4">
+        <v-card class="dashboard-card" rounded="xl" elevation="2">
+          <v-card-item>
+            <template #prepend>
+              <v-avatar color="orange" variant="tonal" size="44">
+                <v-icon>mdi-beach</v-icon>
+              </v-avatar>
+            </template>
+
+            <v-card-title class="font-weight-bold">
+              Leave Balance
+            </v-card-title>
+
+            <v-card-subtitle> Current available credits </v-card-subtitle>
+          </v-card-item>
+
+          <v-card-text>
+            <div class="leave-balance">
+              <div>
+                <div class="text-caption text-grey-darken-1">
+                  Available Leave
+                </div>
+
+                <div class="text-h4 font-weight-bold">
+                  12.5
+                  <span class="text-body-2 font-weight-medium"> days </span>
+                </div>
+              </div>
+
+              <v-icon size="40" color="orange"> mdi-calendar-heart </v-icon>
+            </div>
+
+            <v-divider class="my-4" />
+
+            <div class="d-flex justify-space-between text-body-2">
+              <span class="text-grey-darken-1"> Pending Requests </span>
+
+              <span class="font-weight-bold"> 1 </span>
+            </div>
+
+            <v-btn block variant="text" color="starbucks-green" class="mt-2">
+              View Leave Details
+            </v-btn>
+          </v-card-text>
+        </v-card>
+      </v-col>
+    </v-row>
+
+    <!-- Quick Actions -->
+    <v-row class="mt-1">
+      <v-col cols="12">
+        <v-card rounded="xl" elevation="2" class="pa-4">
+          <div class="d-flex align-center mb-4">
+            <v-icon color="starbucks-green" class="mr-2">
+              mdi-lightning-bolt
+            </v-icon>
+
+            <div>
+              <div class="text-h6 font-weight-bold">Quick Actions</div>
+
+              <div class="text-caption text-grey-darken-1">
+                Frequently used employee services
+              </div>
             </div>
           </div>
+
+          <v-row>
+            <v-col cols="6" sm="3">
+              <Link
+                :href="route('self-service.my-dtr.index')"
+                class="quick-action-link"
+              >
+                <div class="quick-action">
+                  <v-avatar size="48" color="starbucks-green" variant="tonal">
+                    <v-icon> mdi-clock-check-outline </v-icon>
+                  </v-avatar>
+
+                  <div class="mt-2 font-weight-medium">My Timesheet</div>
+
+                  <div class="text-caption text-grey-darken-1">Attendance</div>
+                </div>
+              </Link>
+            </v-col>
+
+            <v-col cols="6" sm="3">
+              <div class="quick-action">
+                <v-avatar size="48" color="orange" variant="tonal">
+                  <v-icon> mdi-calendar-plus </v-icon>
+                </v-avatar>
+
+                <div class="mt-2 font-weight-medium">Apply Leave</div>
+
+                <div class="text-caption text-grey-darken-1">
+                  Request time off
+                </div>
+              </div>
+            </v-col>
+
+            <v-col cols="6" sm="3">
+              <Link
+                :href="route('self-service.my-profile.index')"
+                class="quick-action-link"
+              >
+                <div class="quick-action">
+                  <v-avatar size="48" color="blue" variant="tonal">
+                    <v-icon> mdi-account-cog-outline </v-icon>
+                  </v-avatar>
+
+                  <div class="mt-2 font-weight-medium">My Profile</div>
+
+                  <div class="text-caption text-grey-darken-1">
+                    Personal information
+                  </div>
+                </div>
+              </Link>
+            </v-col>
+
+            <v-col cols="6" sm="3">
+              <div class="quick-action">
+                <v-avatar size="48" color="purple" variant="tonal">
+                  <v-icon> mdi-file-document-outline </v-icon>
+                </v-avatar>
+
+                <div class="mt-2 font-weight-medium">My Requests</div>
+
+                <div class="text-caption text-grey-darken-1">
+                  Track requests
+                </div>
+              </div>
+            </v-col>
+          </v-row>
+        </v-card>
+      </v-col>
+    </v-row>
+
+    <!-- Lower Section -->
+    <v-row class="mt-1">
+      <!-- My Requests -->
+      <v-col cols="12" md="7">
+        <v-card rounded="xl" elevation="2" class="dashboard-card">
+          <v-card-item>
+            <template #prepend>
+              <v-avatar color="blue" variant="tonal" size="44">
+                <v-icon> mdi-file-clock-outline </v-icon>
+              </v-avatar>
+            </template>
+
+            <v-card-title class="font-weight-bold">
+              My Recent Requests
+            </v-card-title>
+
+            <v-card-subtitle> Track your recent HR requests </v-card-subtitle>
+          </v-card-item>
+
+          <v-card-text>
+            <div class="request-item">
+              <div class="d-flex align-center">
+                <v-avatar size="40" color="orange" variant="tonal" class="mr-3">
+                  <v-icon> mdi-beach </v-icon>
+                </v-avatar>
+
+                <div>
+                  <div class="font-weight-medium">Vacation Leave</div>
+
+                  <div class="text-caption text-grey-darken-1">
+                    August 24 – August 26, 2026
+                  </div>
+                </div>
+              </div>
+
+              <v-chip size="small" color="orange" variant="tonal">
+                Pending
+              </v-chip>
+            </div>
+
+            <v-divider class="my-3" />
+
+            <div class="request-item">
+              <div class="d-flex align-center">
+                <v-avatar size="40" color="blue" variant="tonal" class="mr-3">
+                  <v-icon> mdi-file-document </v-icon>
+                </v-avatar>
+
+                <div>
+                  <div class="font-weight-medium">Certificate Request</div>
+
+                  <div class="text-caption text-grey-darken-1">
+                    August 18, 2026
+                  </div>
+                </div>
+              </div>
+
+              <v-chip size="small" color="success" variant="tonal">
+                Approved
+              </v-chip>
+            </div>
+
+            <v-btn block variant="text" color="starbucks-green" class="mt-3">
+              View All Requests
+            </v-btn>
+          </v-card-text>
+        </v-card>
+      </v-col>
+
+      <!-- Upcoming -->
+      <v-col cols="12" md="5">
+        <v-card rounded="xl" elevation="2" class="dashboard-card">
+          <v-card-item>
+            <template #prepend>
+              <v-avatar color="red" variant="tonal" size="44">
+                <v-icon> mdi-calendar-star </v-icon>
+              </v-avatar>
+            </template>
+
+            <v-card-title class="font-weight-bold"> Upcoming </v-card-title>
+
+            <v-card-subtitle> Important dates </v-card-subtitle>
+          </v-card-item>
+
+          <v-card-text>
+            <div class="upcoming-item">
+              <div class="date-box">
+                <div class="text-caption">SEP</div>
+
+                <div class="text-h6 font-weight-bold">03</div>
+              </div>
+
+              <div class="ml-3">
+                <div class="font-weight-medium">Company Holiday</div>
+
+                <div class="text-caption text-grey-darken-1">
+                  Non-working day
+                </div>
+              </div>
+            </div>
+
+            <v-divider class="my-3" />
+
+            <div class="upcoming-item">
+              <div class="date-box">
+                <div class="text-caption">SEP</div>
+
+                <div class="text-h6 font-weight-bold">15</div>
+              </div>
+
+              <div class="ml-3">
+                <div class="font-weight-medium">Payroll Date</div>
+
+                <div class="text-caption text-grey-darken-1">
+                  Next payroll schedule
+                </div>
+              </div>
+            </div>
+          </v-card-text>
+        </v-card>
+      </v-col>
+    </v-row>
+
+    <!-- Announcements -->
+    <v-row class="mt-1">
+      <v-col cols="12">
+        <v-card rounded="xl" elevation="2">
+          <v-card-item>
+            <template #prepend>
+              <v-avatar color="starbucks-green" variant="tonal" size="44">
+                <v-icon> mdi-bullhorn-outline </v-icon>
+              </v-avatar>
+            </template>
+
+            <v-card-title class="font-weight-bold">
+              Announcements
+            </v-card-title>
+
+            <v-card-subtitle> Company updates and notices </v-card-subtitle>
+          </v-card-item>
+
+          <v-card-text>
+            <div class="announcement">
+              <div>
+                <div class="font-weight-medium">HR System Maintenance</div>
+
+                <div class="text-caption text-grey-darken-1">
+                  The HRMS will undergo scheduled maintenance this weekend.
+                </div>
+              </div>
+
+              <div class="text-caption text-grey-darken-1">Aug 28</div>
+            </div>
+          </v-card-text>
         </v-card>
       </v-col>
     </v-row>
@@ -164,18 +426,28 @@
 
 <script>
 import SidebarLayout from "@/layouts/SidebarLayout.vue";
+import { Link } from "@inertiajs/vue3";
 
 export default {
   layout: SidebarLayout,
-  components: {},
+
+  components: {
+    Link,
+  },
+
   data() {
     return {
       flash_status: null,
+
+      employeeName: "John",
+
+      currentDate: "Sunday, August 30, 2026",
     };
   },
 
   mounted() {
     const status = this.$page.props.flash?.status || null;
+
     if (status) {
       this.flash_status = status;
     }
@@ -192,8 +464,61 @@ export default {
 </script>
 
 <style scoped>
-.v-card {
+.dashboard-card {
   height: 100%;
-  min-height: 300px;
+  min-height: 280px;
+}
+
+.schedule-time {
+  font-size: 1.65rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.attendance-summary,
+.leave-balance {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px;
+  background: rgb(var(--v-theme-grey-lighten-4));
+  border-radius: 16px;
+}
+
+.quick-action-link {
+  color: inherit;
+  text-decoration: none;
+}
+
+.quick-action {
+  min-height: 120px;
+  padding: 12px;
+  border-radius: 16px;
+  text-align: center;
+  cursor: pointer;
+  transition: 0.2s ease;
+}
+
+.quick-action:hover {
+  background: rgba(0, 0, 0, 0.04);
+  transform: translateY(-2px);
+}
+
+.request-item,
+.upcoming-item,
+.announcement {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.date-box {
+  width: 52px;
+  min-width: 52px;
+  padding: 6px;
+  text-align: center;
+  border-radius: 12px;
+  background: rgba(0, 0, 0, 0.05);
 }
 </style>
+```

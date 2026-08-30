@@ -22,7 +22,7 @@ class SuperAdminSeeder extends Seeder
         $superadminUser = User::firstOrCreate(
             ['username' => 'superadmin'],
             [
-                'password' => Hash::make('Dmmmsuhrms.1981USDO'),
+                'password' => Hash::make('Administrator123'),
                 'status' => 'active',
                 'employee_id' => null,
             ]

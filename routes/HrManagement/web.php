@@ -163,6 +163,9 @@ Route::middleware(['auth', 'web'])->group(function () {
                     ->middleware(['permission:employee.view'])
                     ->name('index');
 
+                Route::get('employee/movement', 'index')
+                    ->name('movement.index');
+
                 Route::middleware('permission:employee.create')->group(function () {
                     Route::get('/employee/create', 'create')->name('create');
                     Route::post('/employee/store', 'store')->name('store');
@@ -236,7 +239,7 @@ Route::middleware(['auth', 'web'])->group(function () {
 
 
         // Daily Time Record Controller
-        Route::prefix('dailytimerecord')->name('dailytimerecord.')->group(function () {
+        Route::prefix('dailytimerecord')->name('time.')->group(function () {
             Route::controller(DailyTimeRecordController::class)->group(function () {
                 Route::match(['get', 'post'], '/dailytimerecord', 'index')
                     ->middleware('permission:dtr.view')
@@ -256,9 +259,12 @@ Route::middleware(['auth', 'web'])->group(function () {
                 Route::post('/dailytimerecord/events', 'storeEvent')->name('events.store');
                 Route::delete('/dailytimerecord/events/{id}', 'destroyEvent')->name('events.destroy');
                 Route::delete('/dailytimerecord/documents/{id}', 'destroyDocument')->name('documents.destroy');
+
+                Route::get('dailytimerecord/employee/schedules', 'employeeSchedules')
+                    ->name('schedules.index');
             });
 
-            Route::controller(EmployeeWorkShiftsController::class)->name('employeeWorkShifts.')->group(function () {
+            Route::controller(EmployeeWorkShiftsController::class)->name('work-shifts.')->group(function () {
                 Route::match(['get', 'post'], '/employee-work-shifts/index', 'index')->name('index');
                 Route::match(['get', 'post'], '/employee-work-shifts/manage/{id}', 'manage')
                     ->middleware('signed')
@@ -286,11 +292,11 @@ Route::middleware(['auth', 'web'])->group(function () {
         });
 
         // Leave Controller
-        Route::prefix('leave')->name('leave.')->group(function () {
+        Route::prefix('leaves')->name('leaves.')->group(function () {
 
             Route::controller(LeaveController::class)->group(function () {
                 /* eto pala yung index viewing ng employee list ng leave entitlements */
-                Route::match(['get', 'post'], '/leave', 'index')->name('index');
+                Route::match(['get', 'post'], '/leave', 'index')->name('leave-types.index');
 
                 /* Leave List */
                 Route::match(['get', 'post'], '/leave/leaveList', 'leaveList')->name('leaveList');
@@ -299,7 +305,7 @@ Route::middleware(['auth', 'web'])->group(function () {
                 Route::match(['get', 'post'], '/leave/addLeaveEntitlements', 'addLeaveEntitlements')->name('addLeaveEntitlements');
                 Route::post('/leave/storeEmployeeLeaveEntitlements', 'storeEmployeeLeaveEntitlements')->name('storeEmployeeLeaveEntitlements');
 
-                Route::get('/leave/viewLeaveEntitlements', 'viewLeaveEntitlements')->name('viewLeaveEntitlements');
+                Route::get('/leave/viewLeaveEntitlements', 'viewLeaveEntitlements')->name('entitlements.index');
 
                 /* Employee Entitlements */
                 Route::get('/leave/viewEmployeeLeaveEntitlements/{id}', 'viewEmployeeLeaveEntitlements')
@@ -342,6 +348,9 @@ Route::middleware(['auth', 'web'])->group(function () {
 
                 Route::get('/leave-ledger/{employee}/print', 'printLeaveLedger')
                     ->name('ledger.print');
+
+                Route::get('/leave/policies', 'policies')
+                    ->name('policies.index');
             });
 
             Route::controller(EmployeeLeaveSchedulerController::class)->name('scheduler.')->group(function () {
@@ -382,7 +391,7 @@ Route::middleware(['auth', 'web'])->group(function () {
             Route::delete('/universityActivities/{id}', 'destroy')->name('destroy');
         });
 
-        Route::controller(HolidayController::class)->name('holiday.')->group(function () {
+        Route::controller(HolidayController::class)->name('holidays.')->group(function () {
             Route::get('/holiday', 'index')->name('index');
             Route::get('/holiday/create', 'create')->name('create');
             Route::post('/holiday/store', 'store')->name('store');

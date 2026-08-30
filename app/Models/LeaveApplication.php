@@ -5,6 +5,49 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
+/**
+ * @property int $id
+ * @property int $employee_id
+ * @property int $leave_type_id
+ * @property string|null $reason
+ * @property numeric $total_days
+ * @property numeric $total_hours
+ * @property string $status
+ * @property string $submitted_at
+ * @property string|null $approved_at
+ * @property string|null $rejected_at
+ * @property string|null $cancelled_at
+ * @property \Illuminate\Support\Carbon|null $created_at
+ * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property-read \App\Models\LeaveStatus|null $currentStatus
+ * @property-read \App\Models\Employee $employee
+ * @property-read \App\Models\Employee|null $immediate_supervisor
+ * @property-read \App\Models\Leave|null $leave
+ * @property-read \App\Models\EmployeeLeaveCreditsHistory $leaveCreditsHistory
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\LeaveApplicationDate> $leaveDates
+ * @property-read int|null $leave_dates_count
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\LeaveStatus> $leaveStatuses
+ * @property-read int|null $leave_statuses_count
+ * @property-read \App\Models\EmployeeLeaveCreditsHistory|null $specialLeaveCredit
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|LeaveApplication newModelQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|LeaveApplication newQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|LeaveApplication query()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|LeaveApplication visibleTo($user)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|LeaveApplication whereApprovedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|LeaveApplication whereCancelledAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|LeaveApplication whereCreatedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|LeaveApplication whereEmployeeId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|LeaveApplication whereId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|LeaveApplication whereLeaveTypeId($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|LeaveApplication whereReason($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|LeaveApplication whereRejectedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|LeaveApplication whereStatus($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|LeaveApplication whereSubmittedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|LeaveApplication whereTotalDays($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|LeaveApplication whereTotalHours($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|LeaveApplication whereUpdatedAt($value)
+ * @mixin \Eloquent
+ */
 class LeaveApplication extends Model
 {
     use HasFactory;

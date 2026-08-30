@@ -11,19 +11,15 @@ class Holiday extends Model
 
     protected $fillable = [
         'name',
-        'date',
-        'recurring',
-        'length',
-        'operational_country_id',
+        'code',
+        'type',
+        'is_paid',
+        'is_working_day',
+        'is_recurring',
+        'description',
+        'status'
     ];
 
-    /**
-     * The operating units that belong to the holiday.
-     */
-    public function operatingUnits()
-    {
-        return $this->belongsToMany(OperatingUnit::class, 'holiday_operating_unit')
-                    ->withTimestamps();
-    }
+    
 
 }

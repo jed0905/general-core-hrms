@@ -11,14 +11,11 @@ class WorkExperience extends Model
 
     protected $fillable = [
         'employee_id',
+        'company',
+        'job_title',
         'from',
         'to',
-        'position_title',
-        'department_agency',
-        'monthly_salary',
-        'salary_grade',
-        'status_of_appointment',
-        'government_service',
+        'notes'
     ];
 
     public function employee()

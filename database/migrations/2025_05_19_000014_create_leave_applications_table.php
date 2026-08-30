@@ -13,11 +13,21 @@ return new class extends Migration {
         Schema::create('leave_applications', function (Blueprint $table) {
             $table->id();
             $table->foreignId('employee_id')->constrained('employees');
+            $table->foreignId('leave_type_id')
+                ->constrained('leave_types');
 
-            $table->foreignId('leave_id')->nullable()
-                ->constrained('leaves')
-                ->nullOnDelete();
-                
+            $table->string('reason')->nullable();
+
+            $table->decimal('total_days');
+            $table->decimal('total_hours');
+
+            $table->string('status');
+
+            $table->dateTime('submitted_at');
+            $table->dateTime('approved_at')->nullable();
+            $table->dateTime('rejected_at')->nullable();
+            $table->dateTime('cancelled_at')->nullable();
+
             $table->timestamps();
         });
     }

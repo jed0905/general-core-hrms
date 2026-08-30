@@ -11,67 +11,20 @@ class EmployeeMovement extends Model
 
     protected $fillable = [
         'employee_id',
-        'old_employee_number',
-        'new_employee_number',
-        'movement_type',
-        'previous_position_id',
-        'previous_department_id',
-        'previous_designation_id',
-        'previous_operating_unit_id',
-        'previous_salary',
-        'previous_salary_grade',
-        'previous_salary_step',
-        'new_position_id',
-        'new_department_id',
-        'new_designation_id',
-        'new_operating_unit_id',
-        'new_salary',
-        'new_salary_grade',
-        'new_salary_step',
+        'movement_type_id',
+
         'effective_date',
-        'document_file_path',
+        'reference_number',
         'reason',
+        'remarks',
+        'status',
+        'requested_by',
+        'approved_by',
+        'approved_at',
+        'implemented_at'
     ];
 
-    protected $casts = [
-        'effective_date' => 'date',
-        'previous_salary' => 'decimal:2',
-        'new_salary' => 'decimal:2',
-    ];
 
-    // Helper method to get movement types for select dropdown
-    public static function getMovementTypes()
-    {
-        return [
-            'promotion' => 'Promotion',
-            'transfer' => 'Transfer',
-            'reassignment' => 'Reassignment',
-            'demotion' => 'Demotion',
-            'reinstatement' => 'Reinstatement',
-            'reemployment' => 'Reemployment',
-            'separation' => 'Separation',
-            'retirement' => 'Retirement',
-            'resignation' => 'Resignation',
-            'termination' => 'Termination',
-            'suspension' => 'Suspension',
-            'salary_adjustment' => 'Salary Adjustment',
-            'position_change' => 'Position Change',
-            'department_change' => 'Department Change',
-            'designation_change' => 'Designation Change',
-        ];
-    }
-
-    // Helper method to get status options for select dropdown
-    public static function getStatusOptions()
-    {
-        return [
-            'pending' => 'Pending',
-            'approved' => 'Approved',
-            'rejected' => 'Rejected',
-            'implemented' => 'Implemented',
-            'cancelled' => 'Cancelled',
-        ];
-    }
 
     // Relationships
     public function employee()

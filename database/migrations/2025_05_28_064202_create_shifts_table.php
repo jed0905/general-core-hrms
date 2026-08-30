@@ -13,9 +13,19 @@ return new class extends Migration
     {
         Schema::create('shifts', function (Blueprint $table) {
             $table->id();
+
             $table->string('name');
-            $table->time('start_time');
-            $table->time('end_time');
+            $table->string('code')->unique();
+
+            $table->text('description')->nullable();
+
+            $table->boolean('is_overnight')->default(false);
+            $table->boolean('is_flexible')->default(false);
+
+            $table->decimal('required_hours', 5, 2)->nullable();
+
+            $table->boolean('is_active')->default(true);
+
             $table->timestamps();
         });
     }

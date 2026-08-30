@@ -1,32 +1,275 @@
 <template>
   <v-app>
-    <v-navigation-drawer class="noscroll rounded-right" v-model="drawer">
-      <!-- Fixed Logo Section -->
-      <div
-        class="sidebar-header d-flex flex-column justify-center align-center"
-      >
-        <img :src="Logo" width="90" height="90" />
-        <p class="text-subtitle-2 mt-1">{{ $page.props.company_shortcut }}</p>
-        <p class="text-subtitle-2 text-center text-wrap">
-          {{ $page.props.app_name }}
-        </p>
+    <!-- Top Navigation App Bar -->
+    <v-app-bar :elevation="1" class="pe-2 gradient-bg" height="64">
+      <!-- App Brand / Logo Section -->
+      <div class="d-flex align-center ms-4 me-6 cursor-pointer">
+        <img :src="Logo" width="40" height="40" class="me-2" />
+        <div class="d-flex flex-column text-white">
+          <span class="text-subtitle-2 font-weight-bold leading-tight">
+            {{ $page.props.company_shortcut }}
+          </span>
+          <span class="text-caption text-truncate leading-tight max-w-200">
+            {{ $page.props.app_name }}
+          </span>
+        </div>
       </div>
 
-      <v-divider></v-divider>
+      <v-divider
+        vertical
+        inset
+        class="me-2 border-opacity-25 text-white d-none d-md-flex"
+      ></v-divider>
 
-      <div class="sidebar-content overflow-y-auto" v-if="navItems.length">
-        <v-list nav dense class="sidebar-list pa-0">
-          <template v-for="(group, groupIndex) in navItems" :key="groupIndex">
-            <v-list-subheader class="text-uppercase text-grey-darken-1">
+      <!-- Desktop Dynamic Top Navigation Menu -->
+      <div class="d-none d-md-flex align-center">
+        <template
+          v-for="(group, groupIndex) in visibleNavItems"
+          :key="groupIndex"
+        >
+          <!-- Single Direct Navigation Item -->
+          <Link
+            v-if="!group.items"
+            :href="route(group.route)"
+            preserve-state
+            class="text-decoration-none"
+          >
+            <v-btn
+              variant="text"
+              class="text-white text-capitalize me-1"
+              :class="{
+                'active-nav-btn': route().current(`${group.routePrefix}*`),
+              }"
+            >
+              {{ group.title }}
+            </v-btn>
+          </Link>
+
+          <!-- Dropdown Navigation Items -->
+          <v-menu v-else open-on-hover offset-y transition="slide-y-transition">
+            <template #activator="{ props }">
+              <v-btn
+                v-bind="props"
+                variant="text"
+                class="text-white text-capitalize me-1"
+                :class="{ 'active-nav-btn': isGroupActive(group) }"
+              >
+                {{ group.title }}
+                <v-icon icon="mdi-chevron-down" end size="small"></v-icon>
+              </v-btn>
+            </template>
+
+            <v-list density="compact" elevation="4" class="py-1">
+              <template
+                v-for="(item, itemIndex) in group.items"
+                :key="itemIndex"
+              >
+                <Link
+                  :href="route(item.route)"
+                  preserve-state
+                  class="text-decoration-none text-black"
+                >
+                  <v-list-item
+                    link
+                    :prepend-icon="item.icon"
+                    :title="item.title"
+                    :class="{
+                      'v-list-item--active': route().current(
+                        `${item.routePrefix}*`
+                      ),
+                    }"
+                  />
+                </Link>
+              </template>
+            </v-list>
+          </v-menu>
+        </template>
+      </div>
+
+      <v-spacer></v-spacer>
+
+      <!-- Right Action Items -->
+      <div class="d-flex align-center">
+        <!-- 🔔 Notification Bell -->
+        <v-menu
+          v-model="notificationsMenu"
+          offset-y
+          :close-on-content-click="false"
+          @update:modelValue="handleMenuToggle"
+          @open="calculateDropdownHeight"
+        >
+          <template #activator="{ props }">
+            <div class="me-4 d-flex align-center" v-bind="props">
+              <v-badge
+                v-if="unreadNotifications.length > 0"
+                :content="unreadNotifications.length"
+                color="error"
+                overlap
+                offset-x="1"
+                offset-y="25"
+              >
+                <v-icon
+                  icon="mdi-bell-outline"
+                  size="26"
+                  class="text-white cursor-pointer"
+                />
+              </v-badge>
+
+              <v-icon
+                v-else
+                icon="mdi-bell-outline"
+                size="26"
+                class="text-white cursor-pointer"
+              />
+            </div>
+          </template>
+
+          <v-card class="pa-0" style="width: 350px; overflow: hidden">
+            <v-card-title class="text-subtitle-2 font-weight-bold">
+              Notifications
+            </v-card-title>
+            <v-divider></v-divider>
+
+            <v-list
+              class="pa-0"
+              :style="{
+                maxHeight: showAll ? `${dropdownMaxHeight}px` : '300px',
+                overflowY: 'auto',
+              }"
+            >
+              <template v-if="visibleNotifications.length">
+                <v-list-item
+                  v-for="(notif, i) in visibleNotifications"
+                  :key="i"
+                  class="py-3 px-4"
+                  :class="{ 'bg-blue-grey-lighten-4': !notif.read_at }"
+                  style="white-space: normal; word-wrap: break-word"
+                >
+                  <div class="flex justify-between w-100 items-start">
+                    <div class="flex-1 pr-2">
+                      <v-list-item-title
+                        class="notification-title text-sm font-weight-medium mb-1"
+                        :class="{ 'font-weight-bold': !notif.read_at }"
+                      >
+                        {{ notif.data.title }}
+                      </v-list-item-title>
+
+                      <v-list-item-subtitle
+                        class="notification-message text-grey-darken-1"
+                        :class="{ 'font-weight-bold': !notif.read_at }"
+                      >
+                        {{ notif.data.message }}
+                      </v-list-item-subtitle>
+                    </div>
+
+                    <div>
+                      <v-btn
+                        v-if="!notif.read_at"
+                        variant="text"
+                        size="x-small"
+                        color="primary"
+                        class="ml-2"
+                        @click="markAsRead(notif.id)"
+                      >
+                        Mark as Read
+                      </v-btn>
+                    </div>
+                  </div>
+                </v-list-item>
+              </template>
+
+              <v-list-item v-else>
+                <v-list-item-title>No notifications</v-list-item-title>
+              </v-list-item>
+            </v-list>
+
+            <v-divider></v-divider>
+            <v-card-actions class="justify-center">
+              <v-btn
+                v-if="notifications.length > 5"
+                variant="text"
+                @click="toggleShowMore"
+                size="small"
+              >
+                {{ showAll ? "Show less" : "Show more" }}
+              </v-btn>
+            </v-card-actions>
+          </v-card>
+        </v-menu>
+
+        <!-- User Profile Dropdown -->
+        <v-menu>
+          <template v-slot:activator="{ props }">
+            <div class="d-flex align-center cursor-pointer me-2" v-bind="props">
+              <div
+                class="text-white text-subtitle-2 font-weight-bold me-2 d-none d-sm-block"
+              >
+                {{ $page.props.auth.name }}
+              </div>
+              <div class="profile-section d-flex align-center me-1">
+                <img
+                  :src="profileImage"
+                  width="32"
+                  height="32"
+                  class="rounded-circle"
+                />
+              </div>
+              <v-icon icon="mdi-menu-down" color="white"></v-icon>
+            </div>
+          </template>
+          <v-list nav class="text-center">
+            <Link
+              :href="route('my-account.index')"
+              class="text-decoration-none text-black"
+            >
+              <v-list-item title="My Account"></v-list-item>
+            </Link>
+            <v-list-item title="Logout" @click.prevent="handleLogout()" />
+          </v-list>
+        </v-menu>
+
+        <!-- Mobile Menu Toggle Button -->
+        <v-app-bar-nav-icon
+          class="d-md-none text-white"
+          @click="mobileDrawer = !mobileDrawer"
+        ></v-app-bar-nav-icon>
+      </div>
+    </v-app-bar>
+
+    <!-- Mobile Drawer -->
+    <v-navigation-drawer v-model="mobileDrawer" temporary location="right">
+      <v-list nav dense class="pa-2">
+        <template
+          v-for="(group, groupIndex) in visibleNavItems"
+          :key="groupIndex"
+        >
+          <!-- Single Direct Link -->
+          <Link
+            v-if="!group.items"
+            :href="route(group.route)"
+            preserve-state
+            class="text-decoration-none text-black"
+          >
+            <v-list-item
+              link
+              class="py-2 px-4"
+              :title="group.title"
+              :class="{
+                'v-list-item--active': route().current(`${group.routePrefix}*`),
+              }"
+            />
+          </Link>
+
+          <!-- Group Sub-items -->
+          <template v-else>
+            <v-list-subheader
+              class="text-uppercase text-grey-darken-1 font-weight-bold"
+            >
               {{ group.title }}
             </v-list-subheader>
 
             <template v-for="(item, itemIndex) in group.items" :key="itemIndex">
               <Link
-                v-if="
-                  !item.permission ||
-                  $page.props.auth.permissions.includes(item.permission)
-                "
                 :href="route(item.route)"
                 preserve-state
                 class="text-decoration-none text-black"
@@ -45,170 +288,11 @@
               </Link>
             </template>
           </template>
-        </v-list>
-      </div>
+        </template>
+      </v-list>
     </v-navigation-drawer>
 
-    <v-app-bar :elevation="1" class="pe-2 gradient-bg">
-      <v-app-bar-nav-icon
-        @click="drawer = !drawer"
-        style="color: white !important"
-      ></v-app-bar-nav-icon>
-      <v-banner-text style="color: white !important">
-        {{ activeMenuTitle }}
-      </v-banner-text>
-      <v-spacer></v-spacer>
-
-      <!-- 🔔 Notification Bell -->
-      <v-menu
-        v-model="notificationsMenu"
-        offset-y
-        :close-on-content-click="false"
-        @update:modelValue="handleMenuToggle"
-        @open="calculateDropdownHeight"
-      >
-        <template #activator="{ props }">
-          <div class="me-6 d-flex align-center" v-bind="props">
-            <!-- 🔔 Show badge only if there are unread notifications -->
-            <v-badge
-              v-if="unreadNotifications.length > 0"
-              :content="unreadNotifications.length"
-              color="error"
-              overlap
-              offset-x="1"
-              offset-y="25"
-            >
-              <v-icon
-                icon="mdi-bell-outline"
-                size="26"
-                class="text-white cursor-pointer"
-              />
-            </v-badge>
-
-            <!-- 🔕 Plain bell when no unread notifications -->
-            <v-icon
-              v-else
-              icon="mdi-bell-outline"
-              size="26"
-              class="text-white cursor-pointer"
-            />
-          </div>
-        </template>
-
-        <v-card class="pa-0" style="width: 350px; overflow: hidden">
-          <v-card-title class="text-subtitle-2 font-weight-bold">
-            Notifications
-          </v-card-title>
-          <v-divider></v-divider>
-
-          <!-- Notification list -->
-          <v-list
-            class="pa-0"
-            :style="{
-              maxHeight: showAll ? `${dropdownMaxHeight}px` : '300px',
-              overflowY: 'auto',
-            }"
-          >
-            <template v-if="visibleNotifications.length">
-              <v-list-item
-                v-for="(notif, i) in visibleNotifications"
-                :key="i"
-                class="py-3 px-4"
-                :class="{ 'bg-blue-grey-lighten-4': !notif.read_at }"
-                style="white-space: normal; word-wrap: break-word"
-              >
-                <div class="flex justify-between w-100 items-start">
-                  <!-- Notification text -->
-                  <div class="flex-1 pr-2">
-                    <v-list-item-title
-                      class="notification-title text-sm font-weight-medium mb-1"
-                      :class="{ 'font-weight-bold': !notif.read_at }"
-                    >
-                      {{ notif.data.title }}
-                    </v-list-item-title>
-
-                    <v-list-item-subtitle
-                      class="notification-message text-grey-darken-1"
-                      :class="{ 'font-weight-bold': !notif.read_at }"
-                    >
-                      {{ notif.data.message }}
-                    </v-list-item-subtitle>
-                  </div>
-
-                  <!-- Mark as Read button -->
-                  <div>
-                    <v-btn
-                      v-if="!notif.read_at"
-                      variant="text"
-                      size="x-small"
-                      color="primary"
-                      class="ml-2"
-                      @click="markAsRead(notif.id)"
-                    >
-                      Mark as Read
-                    </v-btn>
-                  </div>
-                </div>
-              </v-list-item>
-            </template>
-
-            <v-list-item v-else>
-              <v-list-item-title>No notifications</v-list-item-title>
-            </v-list-item>
-          </v-list>
-
-          <!-- Show more / less -->
-          <v-divider></v-divider>
-          <v-card-actions class="justify-center">
-            <v-btn
-              v-if="notifications.length > 5"
-              variant="text"
-              @click="toggleShowMore"
-              size="small"
-            >
-              {{ showAll ? "Show less" : "Show more" }}
-            </v-btn>
-          </v-card-actions>
-        </v-card>
-      </v-menu>
-      <!-- 🔔 End Notification Bell -->
-
-      <v-menu>
-        <template v-slot:activator="{ props }">
-          <div class="d-flex align-center" v-bind="props">
-            <!-- Notification Bell -->
-
-            <!-- Employee Name -->
-            <div
-              class="text-white text-subtitle-2 cursor-pointer font-weight-bold me-3"
-            >
-              {{ $page.props.auth.name }}
-            </div>
-            <!-- Clickable Profile Image -->
-            <div
-              class="profile-section d-flex align-center me-3 cursor-pointer"
-            >
-              <img
-                :src="profileImage"
-                width="32"
-                height="32"
-                class="rounded-circle"
-              />
-            </div>
-
-            <!-- Menu Button -->
-            <!-- <v-btn icon="mdi-dots-vertical" style="color: white !important" /> -->
-          </div>
-        </template>
-        <v-list nav class="text-center">
-          <Link :href="route('my-account.index')">
-            <v-list-item title="My Account"></v-list-item>
-          </Link>
-          <v-list-item title="Logout" @click.prevent="handleLogout()" />
-        </v-list>
-      </v-menu>
-    </v-app-bar>
-
+    <!-- Main Content Area -->
     <v-main class="page-background">
       <v-container fluid>
         <slot />
@@ -225,9 +309,8 @@ export default {
   data() {
     return {
       Logo,
-      drawer: true,
-      mini: false,
       ProfileImage,
+      mobileDrawer: false,
 
       // Notification Menu
       notificationsMenu: false,
@@ -236,7 +319,7 @@ export default {
       showAll: false,
       echo: null,
 
-      dropdownMaxHeight: 500, // default fallback
+      dropdownMaxHeight: 500,
     };
   },
 
@@ -252,129 +335,92 @@ export default {
 
     profileImage() {
       const photo = this.$page.props.auth.user.employee?.photo;
-
-      // Return full path if photo exists, otherwise default image
-      return photo
-        ? `/storage/${photo}` // assuming photo = 'profile_pictures/filename.jpg'
-        : this.ProfileImage;
+      return photo ? `/storage/${photo}` : this.ProfileImage;
     },
 
     userRoles() {
-      return this.$page.props.auth.roles || []; // e.g. ['superadmin', 'campus_hr']
+      return this.$page.props.auth.roles || [];
     },
 
-    navItems() {
-      const hasRole = (role) => this.userRoles.includes(role);
+    userPermissions() {
+      return this.$page.props.auth.permissions || [];
+    },
 
-      const groupedItems = [];
+    isAdmin() {
+      return this.userRoles.some((r) =>
+        ["superadmin", "administrator", "admin"].includes(r.toLowerCase())
+      );
+    },
 
-      if (
-        hasRole("superadmin") ||
-        hasRole("hr_director") ||
-        hasRole("campus_hr") ||
-        hasRole("employee")
-      ) {
-        // Superadmin and HR Director have access to all sections
-        // Dashboard
-        groupedItems.push({
+    isHR() {
+      return this.userRoles.some((r) =>
+        ["hr_director", "campus_hr", "hr_officer", "hr"].includes(
+          r.toLowerCase()
+        )
+      );
+    },
+
+    modules() {
+      return {
+        dashboard: {
           title: "Dashboard",
+          route: "dashboard.index",
+          routePrefix: "dashboard",
+          permission: "dashboard.view",
+        },
+
+        // Employee Self-Service Top Nav Groups
+        myProfile: {
+          title: "My Profile",
+          route: "self-service.my-profile.index",
+          routePrefix: "self-service.my-profile",
+          permission: "profile.view_own",
+        },
+
+        myTime: {
+          title: "My Time",
           items: [
             {
-              icon: "mdi-view-dashboard",
-              title: "Dashboard",
-              route: "dashboard.index",
+              title: "My Attendance",
+              icon: "mdi-clock-outline",
+              route: "self-service.my-dtr.index",
+              permission: "attendance.view_own",
+              routePrefix: "self-service.my-dtr",
+            },
+            {
+              title: "My Schedule",
+              icon: "mdi-calendar-clock",
+              route: "self-service.my-schedule.index",
+              permission: "schedule.view_own",
+              routePrefix: "self-service.my-schedule",
             },
           ],
-        });
-      }
+        },
 
-      // employee dashboard
-      // if (hasRole("employee")) {
-      //   groupedItems.push({
-      //     title: "Dashboard",
-      //     items: [
-      //       {
-      //         icon: "mdi-view-dashboard",
-      //         title: "Dashboard",
-      //         route: "self-service.dashboard.index",
-      //         routePrefix: "self-service.dashboard",
-      //       },
-      //     ],
-      //   });
-      // }
-
-      // Administration
-      if (
-        hasRole("superadmin") ||
-        hasRole("hr_director") ||
-        hasRole("ict") ||
-        hasRole("campus_hr") ||
-        hasRole("campus_hr_staff")
-      ) {
-        groupedItems.push({
-          title: "Administration",
+        myLeave: {
+          title: "My Leave",
           items: [
             {
-              title: "User Management",
-              icon: "mdi-account-multiple",
-              route: "administration.user.index",
-              permission: "user.view",
-              routePrefix: "administration.user",
+              title: "My Leave Applications",
+              icon: "mdi-calendar-text",
+              route: "self-service.my-leaves.index",
+              permission: "leave.view_own",
+              routePrefix: "self-service.my-leaves",
             },
             {
-              title: "Organization",
-              icon: "mdi-domain",
-              route: "administration.organization.index",
-              permission: "organization.view",
-              routePrefix: "administration.organization",
-            },
-            {
-              title: "Roles",
-              icon: "mdi-shield-account",
-              route: "role.management.index",
-              permission: "role.view",
-              routePrefix: "administration.role",
-            },
-            // {
-            //   title: "Permissions",
-            //   icon: "mdi-lock",
-            //   route: "permission.management.index",
-            //   permission: "permission.view",
-            //   routePrefix: "administration.permission",
-            // },
-            {
-              title: "Role Permissions",
-              icon: "mdi-lock-question",
-              route: "role-permission.management.index",
-              permission: "permission.assign",
-              routePrefix: "administration.role-permission",
+              title: "My Leave Balances",
+              icon: "mdi-scale-balance",
+              route: "self-service.my-leave-balances.index",
+              permission: "leave.view_balance_own",
+              routePrefix: "self-service.my-leave-balances",
             },
           ],
-        });
-      }
+        },
 
-      // HR Management
-      if (
-        hasRole("superadmin") ||
-        hasRole("hr_director") ||
-        hasRole("campus_hr") ||
-        hasRole("ict") ||
-        this.hasPermission("dtr.view") ||
-        this.hasPermission("dtr.print") ||
-        this.hasPermission("leave.view") ||
-        this.hasPermission("leave.recommend") ||
-        this.hasPermission("leave.approve")
-      ) {
-        groupedItems.push({
-          title: "HR Management",
+        // Management Modules (using updated routes)
+        people: {
+          title: "People",
           items: [
-            {
-              title: "Job Structure",
-              icon: "mdi-office-building",
-              route: "hrmanagement.jobstructure.jobstatus.index",
-              permission: "job_structure.view",
-              routePrefix: "hrmanagement.jobstructure",
-            },
             {
               title: "Employees",
               icon: "mdi-account-multiple",
@@ -383,340 +429,229 @@ export default {
               routePrefix: "hrmanagement.employee",
             },
             {
-              title: "Daily Time Record",
-              icon: "mdi-clock",
-              route: "hrmanagement.dailytimerecord.index",
-              permission: "dtr.view",
-              routePrefix: "hrmanagement.dailytimerecord.",
+              title: "Departments",
+              icon: "mdi-domain",
+              route: "administration.organization.department.index",
+              permission: "department.view",
+              routePrefix: "administration.organization.department",
             },
             {
-              title: "Leave Management",
-              icon: "mdi-calendar",
-              route: "hrmanagement.leave.leaveList",
+              title: "Job Titles",
+              icon: "mdi-briefcase",
+              route: "hrmanagement.jobstructure.position.index",
+              permission: "job_title.view",
+              routePrefix: "hrmanagement.jobstructure.position",
+            },
+            {
+              title: "Employment Status",
+              icon: "mdi-account-details",
+              route: "hrmanagement.jobstructure.jobstatus.index",
+              permission: "employee.employment.view",
+              routePrefix: "hrmanagement.jobstructure.jobstatus",
+            },
+            {
+              title: "Employee Movements",
+              icon: "mdi-account-switch",
+              route: "hrmanagement.employee.movement.index",
+              permission: "employee_movement.view",
+              routePrefix: "hrmanagement.employee.movement",
+            },
+          ],
+        },
+
+        time: {
+          title: "Time",
+          items: [
+            {
+              title: "Attendance",
+              icon: "mdi-clock-outline",
+              route: "hrmanagement.time.index",
+              permission: "attendance.view",
+              routePrefix: "hrmanagement.dailytimerecord",
+            },
+            {
+              title: "Work Shifts",
+              icon: "mdi-timetable",
+              route: "hrmanagement.time.work-shifts.index",
+              permission: "shift.view",
+              routePrefix: "time.work-shifts",
+            },
+            {
+              title: "Employee Schedules",
+              icon: "mdi-calendar-clock",
+              route: "hrmanagement.time.schedules.index",
+              permission: "work_schedule.view",
+              routePrefix: "time.schedules",
+            },
+            {
+              title: "Holidays",
+              icon: "mdi-calendar-star",
+              route: "hrmanagement.holidays.index",
+              permission: "holiday.view",
+              routePrefix: "leaves.holidays",
+            },
+          ],
+        },
+
+        leave: {
+          title: "Leave",
+          items: [
+            {
+              title: "Leave Applications",
+              icon: "mdi-calendar-text",
+              route: "hrmanagement.leaves.leaveList",
               permission: "leave.view",
               routePrefix: "hrmanagement.leave",
             },
+            {
+              title: "Leave Types",
+              icon: "mdi-shape-outline",
+              route: "hrmanagement.leaves.leave-types.index",
+              permission: "leave_policy.view",
+              routePrefix: "leaves.leave-types",
+            },
+            {
+              title: "Leave Policies",
+              icon: "mdi-file-document-outline",
+              route: "hrmanagement.leaves.policies.index",
+              permission: "leave_policy.view",
+              routePrefix: "leaves.policies",
+            },
+            {
+              title: "Leave Balances",
+              icon: "mdi-scale-balance",
+              route: "hrmanagement.leaves.entitlements.index",
+              permission: "leave.balance.view",
+              routePrefix: "leaves.entitlements",
+            },
           ],
-        });
-      }
+        },
 
-      // Faculty Evaluation Reports
-
-      // if(
-      //   hasRole("superadmin") ||
-      //   hasRole("hr_director") ||
-      //   hasRole("campus_hr") ||
-      //   hasRole("campus_hr_staff")
-      // ) {
-      //   groupedItems.push({
-      //     title: "Faculty Evaluation Reports",
-      //     items: [
-      //       {
-      //         title: "Faculty Evaluation Reports",
-      //         icon: "mdi-file-chart",
-      //       },
-      //     ],
-      //   });
-      // }
-
-      // Payroll Officer
-      /*if(hasRole('payroll') || hasRole('superadmin')){
-        groupedItems.push({
+        payroll: {
           title: "Payroll",
           items: [
-            {
-              title: "Payroll Generation",
-              icon: "mdi-calendar-blank",
-              route: "payroll.generation.calendar.index",
-              routePrefix: "payroll.generation.calendar",
-            },
-            {
-              title: "Employee Maintenance",
-              icon: "mdi-account-multiple",
-              route: "payroll.employee.maintenance.accounts.index",
-              routePrefix: "payroll.employee.maintenance.accounts",
-            },
-            {
-              title: "Maintenance",
-              icon: "mdi-cog-outline",
-              route: "payroll.maintenance.accounttype.index",
-              routePrefix: "payroll.maintenance.accounttype",
-            },
-          ],
-        });
-      }*/
-
-      //Employee
-      //   Self-Service
-      if (!this.$page.props.auth.name == "") {
-        groupedItems.push({
-          title: "Self-Service",
-          items: [
-            {
-              title: "My DTR",
-              icon: "mdi-clock-time-four-outline",
-              route: "self-service.my-dtr.index",
-              permission: "dtr.self.view",
-              routePrefix: "self-service.my-dtr",
-            },
-            {
-              title: "My Leaves",
-              icon: "mdi-calendar-account",
-              route: "self-service.my-leaves.index",
-              permission: "leave.self.view",
-              routePrefix: "self-service.my-leaves",
-            },
-
-            {
-              title: "My Profile",
-              icon: "mdi-account",
-              route: "self-service.my-profile.index",
-              permission: "profile.view",
-              routePrefix: "self-service.my-profile",
-            },
-          ],
-        });
-      }
-
-      // // Payroll
-      // if (
-      //   hasRole("payroll_officer") ||
-      //   hasRole("hr_director") ||
-      //   hasRole("superadmin")
-      // ) {
-      //   groupedItems.push({
-      //     title: "Payroll",
-      //     items: [
-      //       {
-      //         title: "Payroll",
-      //         icon: "mdi-cash-multiple",
-      //         route: "dashboard.index",
-      //       },
-      //       {
-      //         title: "Reports",
-      //         icon: "mdi-file-chart",
-      //         route: "dashboard.index",
-      //       },
-      //     ],
-      //   });
-      // }
-
-      return groupedItems;
-    },
-
-    // activeMenuTitle() {
-    //   const currentRoute = this.route().current(); // e.g., "users.edit"
-    //   console.log(currentRoute);
-    //   for (const group of this.navItems) {
-    //     for (const item of group.items) {
-    //       if (
-    //         (!item.permission ||
-    //           this.$page.props.auth.permissions.includes(item.permission)) &&
-    //         this.route().current(item.route.routePrefix)
-    //       ) {
-    //         return item.title;
-    //       }
-    //     }
-    //   }
-
-    //   return "";
-    // },
-
-    activeMenuTitle() {
-      const currentRoute = this.route().current();
-
-      for (const group of this.navItems) {
-        for (const item of group.items) {
-          if (
-            (!item.permission ||
-              this.$page.props.auth.permissions.includes(item.permission)) &&
-            this.route().current(`${item.routePrefix}*`) // wildcard here
-          ) {
-            return item.title;
-          }
-        }
-      }
-
-      return "";
-    },
-
-    // Dynamic top tabs/menu based on current main section
-    currentTabs() {
-      const tabsConfig = this.tabsConfigBySection;
-
-      // Find active section by routePrefix wildcard match
-      let activeSection = null;
-      for (const sectionKey of Object.keys(tabsConfig)) {
-        const section = tabsConfig[sectionKey];
-        if (section.routePrefixes?.some((p) => this.route().current(`${p}*`))) {
-          activeSection = sectionKey;
-          break;
-        }
-      }
-
-      if (!activeSection) return [];
-
-      // Filter items by permission if specified
-      const items = tabsConfig[activeSection].items || [];
-      return items.filter((it) => {
-        if (!it.permission) return true;
-        return this.$page.props.auth.permissions.includes(it.permission);
-      });
-    },
-
-    tabsConfigBySection() {
-      return {
-        // Leaves module top tabs
-        hrmanagement_leave: {
-          routePrefixes: [
-            "hrmanagement.leave",
-            "leaves.management",
-            "leaves.entitlements",
-            "leaves.leave-types",
-          ],
-          items: [
-            {
-              type: "menu",
-              label: "Entitlements",
-              items: [
-                {
-                  label: "Add Entitlements",
-                  to: "leaves.entitlements.index",
-                  permission: "manage leaves",
-                },
-                {
-                  label: "Employee Entitlements",
-                  to: "leaves.entitlements.employee-entitlements",
-                  permission: "manage leaves",
-                },
-              ],
-            },
-            {
-              type: "menu",
-              label: "Configure",
-              items: [
-                {
-                  label: "Leave Types",
-                  to: "leaves.leave-types.index",
-                  permission: "manage leaves",
-                },
-                { label: "Holidays" },
-              ],
-            },
+            // Reserved for payroll routes when active
           ],
         },
 
-        // Employees module tabs
-        hrmanagement_employee: {
-          routePrefixes: ["hrmanagement.employee"],
+        reports: {
+          title: "Reports",
           items: [
-            {
-              type: "link",
-              label: "Employees List",
-              to: "hrmanagement.employee.index",
-              permission: "manage employees",
-            },
-            {
-              type: "link",
-              label: "Add Employee",
-              to: "hrmanagement.employee.create",
-              permission: "manage employees",
-            },
+            // Reserved for report routes when active
           ],
         },
 
-        // Job structure
-        hrmanagement_jobstructure: {
-          routePrefixes: ["hrmanagement.jobstructure"],
-          items: [
-            {
-              type: "link",
-              label: "Job Status",
-              to: "hrmanagement.jobstructure.jobstatus.index",
-              permission: "manage job status",
-            },
-            {
-              type: "link",
-              label: "Positions",
-              to: "hrmanagement.jobstructure.position.index",
-              permission: "manage positions",
-            },
-            {
-              type: "link",
-              label: "Designations",
-              to: "hrmanagement.jobstructure.designation.index",
-              permission: "manage designations",
-            },
-            {
-              type: "link",
-              label: "Salaries",
-              to: "hrmanagement.jobstructure.salary.index",
-              permission: "manage salary",
-            },
-          ],
-        },
-
-        // Administration
         administration: {
-          routePrefixes: ["administration.user", "administration.organization"],
+          title: "Administration",
           items: [
             {
-              type: "link",
-              label: "Users",
-              to: "administration.user.index",
-              permission: "manage accounts",
+              title: "Organization",
+              icon: "mdi-domain",
+              route: "administration.organization.index",
+              permission: "organization.view",
+              routePrefix: "administration.organization",
             },
             {
-              type: "link",
-              label: "Organization",
-              to: "administration.organization.index",
-              permission: "manage operating units",
-            },
-          ],
-        },
-
-        // Self-Service
-        self_service: {
-          routePrefixes: [
-            "self-service.dashboard",
-            "self-service.dtr",
-            "self-service.my-leaves",
-            "self-service.my-profile",
-          ],
-          items: [
-            { type: "link", label: "My DTR", to: "self-service.dtr.index" },
-            {
-              type: "link",
-              label: "My Leaves",
-              to: "self-service.my-leaves.index",
+              title: "Locations",
+              icon: "mdi-map-marker-radius",
+              route: "administration.organization.locations.index",
+              permission: "company.view",
+              routePrefix: "administration.locations",
             },
             {
-              type: "link",
-              label: "My Profile",
-              to: "self-service.my-profile.index",
+              title: "Users",
+              icon: "mdi-account-multiple-outline",
+              route: "administration.user.index",
+              permission: "user.view",
+              routePrefix: "administration.user",
+            },
+            {
+              title: "Roles & Permissions",
+              icon: "mdi-shield-lock",
+              route: "role.management.index",
+              permission: "role.view",
+              routePrefix: "administration.role",
             },
           ],
         },
       };
     },
+
+    // Selected navigation bar layout determined by user role
+    navItems() {
+      if (this.isAdmin) {
+        return [
+          this.modules.dashboard,
+          this.modules.people,
+          this.modules.time,
+          this.modules.leave,
+          this.modules.payroll,
+          this.modules.reports,
+          this.modules.administration,
+        ];
+      }
+
+      if (this.isHR) {
+        return [
+          this.modules.dashboard,
+          this.modules.people,
+          this.modules.time,
+          this.modules.leave,
+          this.modules.reports,
+        ];
+      }
+
+      // Default Employee Role view
+      return [
+        this.modules.dashboard,
+        this.modules.myProfile,
+        this.modules.myTime,
+        this.modules.myLeave,
+      ];
+    },
+
+    // Final filter removing items or empty dropdown headers without granted permissions
+    visibleNavItems() {
+      return this.navItems
+        .map((group) => {
+          if (!group.items) {
+            return this.hasPermission(group.permission) ? group : null;
+          }
+
+          const filteredItems = group.items.filter((item) =>
+            this.hasPermission(item.permission)
+          );
+
+          if (filteredItems.length === 0) return null;
+
+          return {
+            ...group,
+            items: filteredItems,
+          };
+        })
+        .filter(Boolean);
+    },
   },
 
   methods: {
+    hasPermission(permission) {
+      if (!permission) return true;
+      return this.userPermissions.includes(permission);
+    },
+
+    isGroupActive(group) {
+      if (!group.items) return false;
+      return group.items.some((item) =>
+        this.route().current(`${item.routePrefix}*`)
+      );
+    },
+
     toggleShowMore() {
       this.showAll = !this.showAll;
     },
 
     calculateDropdownHeight() {
       this.dropdownMaxHeight = window.innerHeight;
-      console.log(this.dropdownMaxHeight);
-      // this.$nextTick(() => {
-      //   const bell = this.$el.querySelector(".v-badge"); // bell icon wrapper
-      //   if (!bell) return;
-      //   const bellRect = bell.getBoundingClientRect();
-      //   const viewportHeight = window.innerHeight;
-      //   const padding = 20; // optional padding from bottom
-      //   this.dropdownMaxHeight = viewportHeight - bellRect.bottom - padding;
-      // });
     },
 
     async fetchNotifications() {
@@ -727,21 +662,17 @@ export default {
     },
 
     listenForNotifications() {
-      const employeeId = this.$page.props.auth.user.employee.id;
+      const employeeId = this.$page.props.auth.user.employee?.id;
+      if (!employeeId) return;
 
       window.Echo.private(`leave.status.${employeeId}`).notification(
         (notification) => {
-          // console.log("New notification received:", notification);
-          // this.showToast("You have a new notification");
-
-          // Add to unread list
           this.unreadNotifications.unshift({
             id: notification.id,
             data: notification,
             read_at: null,
           });
 
-          // Optionally also add to full list
           this.notifications.unshift({
             id: notification.id,
             data: notification,
@@ -758,19 +689,15 @@ export default {
         {
           preserveState: true,
           onSuccess: () => {
-            // Update UI instantly without waiting for full reload
             if (notifId) {
-              // Mark single notification as read
               const notif = this.notifications.find((n) => n.id === notifId);
               if (notif) notif.read_at = new Date().toISOString();
             } else {
-              // Mark all as read
               this.notifications.forEach(
                 (n) => (n.read_at = new Date().toISOString())
               );
             }
 
-            // Recalculate unread notifications
             this.unreadNotifications = this.notifications.filter(
               (n) => !n.read_at
             );
@@ -785,11 +712,6 @@ export default {
       });
     },
 
-    hasPermission(permission) {
-      // console.log("Checking permission:", permission);
-      return this.$page.props.auth.permissions.includes(permission);
-    },
-
     hasRoute(name) {
       return Object.keys(this.$page.props.ziggy.routes).includes(name);
     },
@@ -800,11 +722,9 @@ export default {
 <style scoped>
 .gradient-bg {
   background: #006241;
-  /* background: linear-gradient(90deg, rgba(0, 98, 65, 1) 0%, rgba(87, 199, 133, 1) 64%, rgba(242, 199, 27, 1) 97%); */
 }
 
 .page-background {
-  /* Option 3: Subtle gradient with reduced opacity */
   background: linear-gradient(
     226deg,
     rgba(0, 98, 65, 0.1) 5%,
@@ -813,35 +733,6 @@ export default {
   );
 }
 
-.tabs {
-  position: sticky;
-  top: 64px;
-  z-index: 10;
-  background-color: white;
-  height: 50px;
-}
-
-.sidebar-header {
-  position: sticky; /* Or use fixed if needed */
-  top: 0;
-  background-color: white; /* Match drawer background */
-  z-index: 1;
-  padding: 16px 0;
-  border-bottom: 1px solid #eee;
-}
-
-.sidebar-content {
-  flex: 1;
-  overflow: hidden;
-  padding-top: 8px;
-}
-
-.sidebar-list .v-list-item {
-  min-height: 36px !important;
-  font-size: 0.875rem;
-}
-
-/* Profile section styles */
 .cursor-pointer {
   cursor: pointer;
 }
@@ -851,16 +742,20 @@ export default {
   transition: opacity 0.2s ease;
 }
 
-/* Navigation drawer rounded right edge */
-.rounded-right {
-  border-top-right-radius: 16px !important;
-  border-bottom-right-radius: 20px !important;
-}
 .rounded-circle {
   border-radius: 50%;
   object-fit: cover;
-  width: 35px;
-  height: 35px;
+  width: 32px;
+  height: 32px;
+}
+
+.max-w-200 {
+  max-width: 200px;
+}
+
+.active-nav-btn {
+  background-color: rgba(255, 255, 255, 0.18);
+  font-weight: bold;
 }
 
 .notification-title,

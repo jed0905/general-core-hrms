@@ -16,6 +16,12 @@ return new class extends Migration {
             // Link to employee table (foreign key)
             $table->string('employee_number');
 
+            $table->foreign('employee_number')
+                ->references('employee_number')
+                ->on('employees')
+                ->cascadeOnUpdate()
+                ->cascadeOnDelete();
+
             // Store OTP code (hashed for security)
             $table->string('otp');
 
@@ -29,11 +35,6 @@ return new class extends Migration {
             $table->enum('action', ['register', 'login', 'change_password', 'change_email', 'enable_two_factor']);
 
             $table->timestamps();
-
-            $table->foreign('employee_number')
-                ->references('employee_number')
-                ->on('employees')
-                ->onDelete('cascade');
         });
     }
 

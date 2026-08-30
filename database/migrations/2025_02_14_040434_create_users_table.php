@@ -13,6 +13,7 @@ return new class extends Migration {
         Schema::create('users', function (Blueprint $table) {
             $table->id();
             $table->foreignId('employee_id')->nullable()->constrained('employees');
+            $table->string('google_id')->nullable();
             $table->string('username')->unique();
             $table->string('password');
             $table->string('status')->default('active');

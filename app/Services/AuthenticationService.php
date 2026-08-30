@@ -29,7 +29,7 @@ class AuthenticationService
         }
 
         //Check if the email exists
-        $email = PersonalInformation::where('employee_id', $employee->id)
+        $email = Employee::where('employee_id', $employee->id)
             ->where('email', $data['email'])
             ->first();
 
@@ -65,7 +65,7 @@ class AuthenticationService
         //Check if the employee number exists and email exists
 
         $employee = Employee::where('employee_number', $data['employee_number'])->first();
-        $email = PersonalInformation::where('employee_id', $employee->id)->where('email', $data['email'])->first();
+        $email = Employee::where('employee_id', $employee->id)->where('email', $data['email'])->first();
         if(!$email){
             return redirect()->back()->withErrors(['errors' => 'The Email address you entered does not match the record associated with this Employee ID. Please use the official company email registered with HR.']);
         }

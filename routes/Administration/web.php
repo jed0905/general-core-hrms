@@ -4,6 +4,8 @@ use App\Http\Controllers\Web\Administration\OrganizationController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Web\Administration\UserManagementController;
 
+// Route::middleware(['auth', ])
+
 
 Route::middleware(['auth', 'web', 'role:superadmin|hr_director|ict|campus_hr|campus_hr_staff'])->group(function () {
 
@@ -46,6 +48,9 @@ Route::middleware(['auth', 'web', 'role:superadmin|hr_director|ict|campus_hr|cam
                 ->middleware(['permission:organization.view'])
                 ->name('index');
 
+            Route::get('/organization/department', 'index')
+                ->name('department.index');
+
             Route::get('/organization/create', 'create')
                 ->middleware('permission:organization.manage')
                 ->name('create');
@@ -74,6 +79,9 @@ Route::middleware(['auth', 'web', 'role:superadmin|hr_director|ict|campus_hr|cam
 
             Route::put('/organization/reset-password/{id}', 'resetPassword')
                 ->name('reset-password');
+
+            Route::get('organization/locations', 'locations')
+                ->name('locations.index');
         });
     });
 

@@ -21,210 +21,843 @@ class RolesAndPermissionsSeeder extends Seeder
         // New Set of Permissions for existing roles
         // Define permissions
         $permissions = [
-            // Administration
-            'user.view',
-            'user.create',
-            'user.edit',
-            'user.delete',
+            // Dashboard
+            'dashboard.view',
+
+            // Employee Management
+            'employee.view',
+            'employee.create',
+            'employee.update',
+            'employee.archive',
+            'employee.restore',
+            'employee.export',
+            'employee.import',
+
+            'employee.personal.view',
+            'employee.personal.update',
+
+            'employee.employment.view',
+            'employee.employment.update',
+
+            'employee.compensation.view',
+            'employee.compensation.update',
+
+            'employee.documents.view',
+            'employee.documents.create',
+            'employee.documents.update',
+            'employee.documents.delete',
+
+            'employee.contacts.view',
+            'employee.contacts.update',
+
+            'employee.education.view',
+            'employee.education.create',
+            'employee.education.update',
+            'employee.education.delete',
+
+            'employee.experience.view',
+            'employee.experience.create',
+            'employee.experience.update',
+            'employee.experience.delete',
+
+            // Employee Self-Service
+            'profile.view_own',
+            'profile.update_own',
+
+            'attendance.view_own',
+
+            'leave.view_own',
+            'leave.create',
+            'leave.update_own',
+            'leave.cancel_own',
+            'leave.view_balance_own',
+            'leave.view_history_own',
+
+            'schedule.view_own',
+
+            'request.view_own',
+            'request.create',
+            'request.cancel_own',
+
+            // Employee Movements
+            'employee_movement.view',
+            'employee_movement.create',
+            'employee_movement.update',
+            'employee_movement.submit',
+            'employee_movement.approve',
+            'employee_movement.reject',
+            'employee_movement.implement',
+            'employee_movement.cancel',
+            'employee_movement.export',
+
+            // Organization
             'organization.view',
-            'organization.manage',
+            'organization.create',
+            'organization.update',
+            'organization.archive',
+
+            'department.view',
+            'department.create',
+            'department.update',
+            'department.archive',
+
+            // Work Shift
+            'shift.view',
+            'shift.create',
+            'shift.update',
+            'shift.archive',
+
+            'work_schedule.view',
+            'work_schedule.create',
+            'work_schedule.update',
+            'work_schedule.archive',
+
+            'employee_work_schedule.view',
+            'employee_work_schedule.assign',
+            'employee_work_schedule.update',
+            'employee_work_schedule.remove',
+
+            // Attendance
+            'attendance.view',
+            'attendance.create',
+            'attendance.update',
+            'attendance.delete',
+            'attendance.adjust',
+            'attendance.approve_adjustment',
+            'attendance.export',
+
+            'attendance.process',
+            'attendance.reprocess',
+            'attendance.finalize',
+
+            // Leave
+            'leave.view',
+            'leave.create',
+            'leave.update',
+            'leave.delete',
+            'leave.cancel',
+            'leave.submit',
+            'leave.export',
+
+            // Leave Approval
+            'leave.approval.view',
+            'leave.approval.approve',
+            'leave.approval.reject',
+            'leave.approval.return',
+
+            // Leave Balances
+            'leave.balance.view',
+            'leave.balance.create',
+            'leave.balance.update',
+            'leave.balance.adjust',
+            'leave.balance.export',
+
+            'leave.balance_history.view',
+            'leave.balance_history.export',
+
+            // Leave Policies
+            'leave_policy.view',
+            'leave_policy.create',
+            'leave_policy.update',
+            'leave_policy.archive',
+
+            'leave_policy_rule.view',
+            'leave_policy_rule.create',
+            'leave_policy_rule.update',
+            'leave_policy_rule.delete',
+
+            // Holidays
+            'holiday.view',
+            'holiday.create',
+            'holiday.update',
+            'holiday.archive',
+            'holiday.export',
+
+
+            // Job Title Management
+            'job_title.view',
+            'job_title.create',
+            'job_title.update',
+            'job_title.archive',
+
+            // Role Management
             'role.view',
             'role.create',
-            'role.edit',
+            'role.update',
             'role.delete',
+            'role.assign_permissions',
+            'role.assign_users',
+
+            // Permission Management
             'permission.view',
-            'permission.assign',
 
-            // HR Management
-            'job_structure.view',
-            'job_structure.manage',
-            'employee.view',
-            'employee.create',
-            'employee.edit',
-            'employee.delete',
-            'dtr.view',
-            'dtr.print',
-            'leave.view',
-            'leave.apply',
-            'leave.approve',
-            'leave.recommend',
-            'leave.assign_entitlement',
-
-            // Self Service
-            'profile.view',
-            'profile.edit',
-            'dtr.self.view',
-            'dtr.self.print',
-            'leave.self.view',
-            'leave.self.apply',
-
-            // Payroll
-            'payroll.view',
-            'payroll.process',
-            'payroll.export',
-        ];
-
-        foreach ($permissions as $permission) {
-            Permission::firstOrCreate(['name' => $permission]);
-        }
-
-        // Define roles
-        $superadmin = Role::firstOrCreate(['name' => 'superadmin']);
-        $ict = Role::firstOrCreate(['name' => 'ict']);
-        $hrDirector = Role::firstOrCreate(['name' => 'hr_director']);
-        $campusHr = Role::firstOrCreate(['name' => 'campus_hr']);
-        $campusHrStaff = Role::firstOrCreate(['name' => 'campus_hr_staff']);
-        $payroll = Role::firstOrCreate(['name' => 'payroll']);
-        $college_secretary = Role::firstOrCreate(['name' => 'college_secretary']);
-        $employee = Role::firstOrCreate(['name' => 'employee']);
-
-        // Assign permissions
-        $superadmin->givePermissionTo(Permission::all());
-
-        $ict->givePermissionTo([
-            // Administration
+            // User Management
             'user.view',
             'user.create',
-            'user.edit',
-            'user.delete',
-            'organization.view',
-            'organization.manage',
+            'user.update',
+            'user.deactivate',
+            'user.activate',
+            'user.reset_password',
+            'user.assign_role',
 
-            // HR Management
-            'employee.view',
+            // System Administration
+            'system.settings.view',
+            'system.settings.update',
 
-            // Self Service
-            'profile.view',
-            'profile.edit',
-            'dtr.self.view',
-            'dtr.self.print',
-            'leave.self.view',
-            'leave.self.apply',
+            'system.audit.view',
+
+            'system.logs.view',
+
+            'system.backup.view',
+            'system.backup.create',
+
+            'system.maintenance.enable',
+            'system.maintenance.disable',
+
+            // Company Settings
+            'company.view',
+            'company.update',
+
+            'company_settings.view',
+            'company_settings.update',
+
+            // Reports
+            'report.view',
+            'report.export',
+            'report.employee',
+            'report.attendance',
+            'report.leave',
+        ];
+
+        /*
+        |--------------------------------------------------------------------------
+        | Create Permissions
+        |--------------------------------------------------------------------------
+        */
+
+        foreach ($permissions as $permission) {
+            Permission::firstOrCreate([
+                'name' => $permission,
+                'guard_name' => 'web',
+            ]);
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | Create Default Roles
+        |--------------------------------------------------------------------------
+        |
+        | These roles are provided as default templates.
+        | Companies can modify the permissions assigned to each role
+        | or create their own custom roles.
+        |
+        */
+
+        $superadmin = Role::firstOrCreate([
+            'name' => 'superadmin',
+            'guard_name' => 'web',
         ]);
 
-        $hrDirector->givePermissionTo([
-            // Administration
-            'organization.view',
-            'organization.manage',
+        $hrDirector = Role::firstOrCreate([
+            'name' => 'hr_director',
+            'guard_name' => 'web',
+        ]);
 
-            // HR Management
-            'job_structure.view',
-            'job_structure.manage',
+        $hrManager = Role::firstOrCreate([
+            'name' => 'hr_manager',
+            'guard_name' => 'web',
+        ]);
+
+        $hrStaff = Role::firstOrCreate([
+            'name' => 'hr_staff',
+            'guard_name' => 'web',
+        ]);
+
+        $payroll = Role::firstOrCreate([
+            'name' => 'payroll',
+            'guard_name' => 'web',
+        ]);
+
+        $supervisor = Role::firstOrCreate([
+            'name' => 'supervisor',
+            'guard_name' => 'web',
+        ]);
+
+        $employee = Role::firstOrCreate([
+            'name' => 'employee',
+            'guard_name' => 'web',
+        ]);
+
+        /*
+        |--------------------------------------------------------------------------
+        | Super Administrator
+        |--------------------------------------------------------------------------
+        */
+
+        $superadmin->syncPermissions(
+            Permission::where('guard_name', 'web')->get()
+        );
+
+        /*
+        |--------------------------------------------------------------------------
+        | HR Director
+        |--------------------------------------------------------------------------
+        */
+
+        $hrDirector->syncPermissions([
+
+            // Dashboard
+            'dashboard.view',
+
+            // Employees
             'employee.view',
             'employee.create',
-            'employee.edit',
-            'employee.delete',
-            'dtr.view',
-            'dtr.print',
+            'employee.update',
+            'employee.archive',
+            'employee.restore',
+            'employee.export',
+            'employee.import',
+
+            'employee.personal.view',
+            'employee.personal.update',
+
+            'employee.employment.view',
+            'employee.employment.update',
+
+            'employee.compensation.view',
+            'employee.compensation.update',
+
+            'employee.documents.view',
+            'employee.documents.create',
+            'employee.documents.update',
+            'employee.documents.delete',
+
+            'employee.contacts.view',
+            'employee.contacts.update',
+
+            'employee.education.view',
+            'employee.education.create',
+            'employee.education.update',
+            'employee.education.delete',
+
+            'employee.experience.view',
+            'employee.experience.create',
+            'employee.experience.update',
+            'employee.experience.delete',
+
+            // Employee Movements
+            'employee_movement.view',
+            'employee_movement.create',
+            'employee_movement.update',
+            'employee_movement.submit',
+            'employee_movement.approve',
+            'employee_movement.reject',
+            'employee_movement.implement',
+            'employee_movement.cancel',
+            'employee_movement.export',
+
+            // Organization
+            'organization.view',
+            'organization.create',
+            'organization.update',
+            'organization.archive',
+
+            'department.view',
+            'department.create',
+            'department.update',
+            'department.archive',
+
+            // Work Shifts
+            'shift.view',
+            'shift.create',
+            'shift.update',
+            'shift.archive',
+
+            'work_schedule.view',
+            'work_schedule.create',
+            'work_schedule.update',
+            'work_schedule.archive',
+
+            'employee_work_schedule.view',
+            'employee_work_schedule.assign',
+            'employee_work_schedule.update',
+            'employee_work_schedule.remove',
+
+            // Attendance
+            'attendance.view',
+            'attendance.create',
+            'attendance.update',
+            'attendance.delete',
+            'attendance.adjust',
+            'attendance.approve_adjustment',
+            'attendance.export',
+            'attendance.process',
+            'attendance.reprocess',
+            'attendance.finalize',
+
+            // Leave
             'leave.view',
-            'leave.apply',
-            'leave.approve',
-            'leave.assign_entitlement',
+            'leave.create',
+            'leave.update',
+            'leave.delete',
+            'leave.cancel',
+            'leave.submit',
+            'leave.export',
 
-            // Self Service
-            'profile.view',
-            'profile.edit',
-            'dtr.self.view',
-            'dtr.self.print',
-            'leave.self.view',
-            'leave.self.apply',
+            // Leave Approval
+            'leave.approval.view',
+            'leave.approval.approve',
+            'leave.approval.reject',
+            'leave.approval.return',
 
+            // Leave Balances
+            'leave.balance.view',
+            'leave.balance.create',
+            'leave.balance.update',
+            'leave.balance.adjust',
+            'leave.balance.export',
+
+            'leave.balance_history.view',
+            'leave.balance_history.export',
+
+            // Leave Policies
+            'leave_policy.view',
+            'leave_policy.create',
+            'leave_policy.update',
+            'leave_policy.archive',
+
+            'leave_policy_rule.view',
+            'leave_policy_rule.create',
+            'leave_policy_rule.update',
+            'leave_policy_rule.delete',
+
+            // Holidays
+            'holiday.view',
+            'holiday.create',
+            'holiday.update',
+            'holiday.archive',
+            'holiday.export',
+
+            // Job Titles
+            'job_title.view',
+            'job_title.create',
+            'job_title.update',
+            'job_title.archive',
+
+            // Roles
+            'role.view',
+            'role.create',
+            'role.update',
+            'role.delete',
+            'role.assign_permissions',
+            'role.assign_users',
+
+            // Permissions
+            'permission.view',
+
+            // Users
+            'user.view',
+            'user.create',
+            'user.update',
+            'user.deactivate',
+            'user.activate',
+            'user.reset_password',
+            'user.assign_role',
+
+            // Company
+            'company.view',
+            'company.update',
+
+            'company_settings.view',
+            'company_settings.update',
+
+            // System
+            'system.settings.view',
+            'system.settings.update',
+            'system.audit.view',
+            'system.logs.view',
         ]);
 
-        $campusHr->givePermissionTo([
-            // Administration
-            'organization.view',
-            'organization.manage',
+        /*
+        |--------------------------------------------------------------------------
+        | HR Manager
+        |--------------------------------------------------------------------------
+        */
 
-            // HR Management
-            'job_structure.view',
-            'job_structure.manage',
+        $hrManager->syncPermissions([
+
+            // Dashboard
+            'dashboard.view',
+
+            // Employees
             'employee.view',
             'employee.create',
-            'employee.edit',
-            'employee.delete',
-            'dtr.view',
-            'dtr.print',
-            'leave.view',
-            'leave.apply',
-            'leave.approve',
-            'leave.assign_entitlement',
+            'employee.update',
+            'employee.archive',
+            'employee.restore',
+            'employee.export',
 
-            // Self Service
-            'profile.view',
-            'profile.edit',
-            'dtr.self.view',
-            'dtr.self.print',
-            'leave.self.view',
-            'leave.self.apply',
+            'employee.personal.view',
+            'employee.personal.update',
+
+            'employee.employment.view',
+            'employee.employment.update',
+
+            'employee.documents.view',
+            'employee.documents.create',
+            'employee.documents.update',
+
+            'employee.contacts.view',
+            'employee.contacts.update',
+
+            'employee.education.view',
+            'employee.education.create',
+            'employee.education.update',
+
+            'employee.experience.view',
+            'employee.experience.create',
+            'employee.experience.update',
+
+            // Employee Movements
+            'employee_movement.view',
+            'employee_movement.create',
+            'employee_movement.update',
+            'employee_movement.submit',
+            'employee_movement.approve',
+            'employee_movement.reject',
+            'employee_movement.implement',
+            'employee_movement.cancel',
+            'employee_movement.export',
+
+            // Organization
+            'organization.view',
+
+            'department.view',
+            'department.create',
+            'department.update',
+
+            // Work Shifts
+            'shift.view',
+            'shift.create',
+            'shift.update',
+
+            'work_schedule.view',
+            'work_schedule.create',
+            'work_schedule.update',
+
+            'employee_work_schedule.view',
+            'employee_work_schedule.assign',
+            'employee_work_schedule.update',
+            'employee_work_schedule.remove',
+
+            // Attendance
+            'attendance.view',
+            'attendance.create',
+            'attendance.update',
+            'attendance.adjust',
+            'attendance.approve_adjustment',
+            'attendance.export',
+            'attendance.process',
+            'attendance.reprocess',
+
+            // Leave
+            'leave.view',
+            'leave.create',
+            'leave.update',
+            'leave.cancel',
+            'leave.submit',
+            'leave.export',
+
+            // Leave Approval
+            'leave.approval.view',
+            'leave.approval.approve',
+            'leave.approval.reject',
+            'leave.approval.return',
+
+            // Leave Balances
+            'leave.balance.view',
+            'leave.balance.create',
+            'leave.balance.update',
+            'leave.balance.adjust',
+            'leave.balance.export',
+
+            'leave.balance_history.view',
+            'leave.balance_history.export',
+
+            // Leave Policies
+            'leave_policy.view',
+            'leave_policy.create',
+            'leave_policy.update',
+
+            'leave_policy_rule.view',
+            'leave_policy_rule.create',
+            'leave_policy_rule.update',
+
+            // Holidays
+            'holiday.view',
+            'holiday.create',
+            'holiday.update',
+            'holiday.archive',
+            'holiday.export',
+
+            // Job Titles
+            'job_title.view',
+            'job_title.create',
+            'job_title.update',
+
+            // Reports
+            'report.view',
+            'report.export',
+            'report.employee',
+            'report.attendance',
+            'report.leave',
         ]);
 
-        $campusHrStaff->givePermissionTo([
-            // Administration
-            'organization.view',
-            'organization.manage',
+        /*
+        |--------------------------------------------------------------------------
+        | HR Staff
+        |--------------------------------------------------------------------------
+        */
 
-            // HR Management
-            'job_structure.view',
-            'job_structure.manage',
+        $hrStaff->syncPermissions([
+
+            // Dashboard
+            'dashboard.view',
+
+            // Employees
             'employee.view',
             'employee.create',
-            'employee.edit',
-            'employee.delete',
-            'dtr.view',
-            'dtr.print',
+            'employee.update',
+            'employee.export',
+
+            'employee.personal.view',
+            'employee.personal.update',
+
+            'employee.employment.view',
+
+            'employee.documents.view',
+            'employee.documents.create',
+            'employee.documents.update',
+
+            'employee.contacts.view',
+            'employee.contacts.update',
+
+            'employee.education.view',
+            'employee.education.create',
+            'employee.education.update',
+
+            'employee.experience.view',
+            'employee.experience.create',
+            'employee.experience.update',
+
+            // Employee Movements
+            'employee_movement.view',
+            'employee_movement.create',
+            'employee_movement.update',
+            'employee_movement.submit',
+            'employee_movement.export',
+
+            // Organization
+            'organization.view',
+            'department.view',
+
+            // Work Shifts
+            'shift.view',
+            'work_schedule.view',
+
+            'employee_work_schedule.view',
+
+            // Attendance
+            'attendance.view',
+            'attendance.create',
+            'attendance.update',
+            'attendance.adjust',
+            'attendance.export',
+
+            // Leave
             'leave.view',
-            'leave.apply',
-            'leave.approve',
-            'leave.assign_entitlement',
+            'leave.create',
+            'leave.update',
+            'leave.cancel',
+            'leave.submit',
+            'leave.export',
 
-            // Self Service
-            'profile.view',
-            'profile.edit',
-            'dtr.self.view',
-            'dtr.self.print',
-            'leave.self.view',
-            'leave.self.apply',
+            // Leave Approval
+            'leave.approval.view',
+
+            // Leave Balances
+            'leave.balance.view',
+            'leave.balance.create',
+            'leave.balance.update',
+            'leave.balance.adjust',
+            'leave.balance.export',
+
+            'leave.balance_history.view',
+            'leave.balance_history.export',
+
+            // Leave Policies
+            'leave_policy.view',
+            'leave_policy_rule.view',
+
+            // Holidays
+            'holiday.view',
+
+            // Job Titles
+            'job_title.view',
+
+            // Reports
+            'report.view',
+            'report.export',
+            'report.employee',
+            'report.attendance',
+            'report.leave',
         ]);
 
-        $payroll->givePermissionTo([
-            // Payroll
-            'payroll.view',
-            'payroll.process',
-            'payroll.export',
+        /*
+        |--------------------------------------------------------------------------
+        | Payroll
+        |--------------------------------------------------------------------------
+        */
+
+        // $payroll->syncPermissions([
+
+        //     // Dashboard
+        //     'dashboard.view',
+
+        //     // Employee information required for payroll
+        //     'employee.view',
+        //     'employee.employment.view',
+        //     'employee.compensation.view',
+
+        //     // Attendance
+        //     'attendance.view',
+        //     'attendance.export',
+
+        //     // Leave
+        //     'leave.view',
+        //     'leave.balance.view',
+        //     'leave.balance_history.view',
+
+        //     // Payroll
+        //     'payroll.view',
+        //     'payroll.create',
+        //     'payroll.update',
+        //     'payroll.calculate',
+        //     'payroll.review',
+        //     'payroll.approve',
+        //     'payroll.reject',
+        //     'payroll.finalize',
+        //     'payroll.export',
+
+        //     // Compensation
+        //     'compensation.view',
+        //     'compensation.create',
+        //     'compensation.update',
+        //     'compensation.approve',
+
+        //     // Reports
+        //     'report.view',
+        //     'report.export',
+        //     'report.employee',
+        //     'report.attendance',
+        //     'report.leave',
+        // ]);
+
+        /*
+        |--------------------------------------------------------------------------
+        | Supervisor
+        |--------------------------------------------------------------------------
+        |
+        | Scope should later be applied at the application/business-logic
+        | level so supervisors only see their direct reports.
+        |
+        */
+
+        $supervisor->syncPermissions([
+
+            // Dashboard
+            'dashboard.view',
+
+            // Employee information
+            'employee.view',
+
+            // Attendance
+            'attendance.view',
+
+            // Leave
+            'leave.view',
+            'leave.approval.view',
+            'leave.approval.approve',
+            'leave.approval.reject',
+            'leave.approval.return',
+
+            // Work Schedule
+            'shift.view',
+            'work_schedule.view',
+            'employee_work_schedule.view',
+
+            // Reports
+            'report.view',
+            'report.attendance',
+            'report.leave',
 
             // Self Service
-            'profile.view',
-            'profile.edit',
-            'dtr.self.view',
-            'dtr.self.print',
-            'leave.self.view',
-            'leave.self.apply',
+            'profile.view_own',
+            'profile.update_own',
+
+            'attendance.view_own',
+
+            'leave.view_own',
+            'leave.create',
+            'leave.update_own',
+            'leave.cancel_own',
+            'leave.view_balance_own',
+            'leave.view_history_own',
+
+            'schedule.view_own',
+
+            'request.view_own',
+            'request.create',
+            'request.cancel_own',
         ]);
 
-        $college_secretary->givePermissionTo([
-            // HR Management
-            'dtr.view',
-            'dtr.print',
+        /*
+        |--------------------------------------------------------------------------
+        | Employee
+        |--------------------------------------------------------------------------
+        */
+
+        $employee->syncPermissions([
+
+            // Dashboard
+            'dashboard.view',
 
             // Self Service
-            'profile.view',
-            'profile.edit',
-            'dtr.self.view',
-            'dtr.self.print',
-            'leave.self.view',
-            'leave.self.apply',
+            'profile.view_own',
+            'profile.update_own',
 
+            'attendance.view_own',
+
+            'leave.view_own',
+            'leave.create',
+            'leave.update_own',
+            'leave.cancel_own',
+            'leave.view_balance_own',
+            'leave.view_history_own',
+
+            'schedule.view_own',
+
+            'request.view_own',
+            'request.create',
+            'request.cancel_own',
         ]);
 
-        $employee->givePermissionTo([
-            // Self Service
-            'profile.view',
-            'profile.edit',
-            'dtr.self.view',
-            'dtr.self.print',
-            'leave.self.view',
-            'leave.self.apply',
-        ]);
+        /*
+        |--------------------------------------------------------------------------
+        | Clear Permission Cache
+        |--------------------------------------------------------------------------
+        */
+
+        app()[PermissionRegistrar::class]->forgetCachedPermissions();
     }
 }

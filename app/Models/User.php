@@ -23,10 +23,10 @@ class User extends Authenticatable
         'employee_id',
         'username',
         'password',
+        'google_id',
         'status',
         'failed_logins',
         'is_two_factor_enabled',
-        'google_id',
     ];
 
     /**
@@ -69,5 +69,4 @@ class User extends Authenticatable
     {
         return $this->belongsTo(Employee::class);
     }
-
 }

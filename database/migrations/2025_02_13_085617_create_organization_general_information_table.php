@@ -12,6 +12,7 @@ return new class extends Migration {
     {
         Schema::create('organization_general_information', function (Blueprint $table) {
             $table->id();
+            $table->string('name');
             $table->string('phone');
             $table->string('email');
             $table->string('country');

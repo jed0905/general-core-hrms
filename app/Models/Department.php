@@ -11,11 +11,7 @@ class Department extends Model
     protected $fillable = [
         'name',
         'shortcut',
-        'operating_unit_id',
         'parent_id',
     ];
 
-    public function operatingUnit(){
-        return $this->belongsTo(OperatingUnit::class, 'operating_unit_id', 'id');
-    }
 }
