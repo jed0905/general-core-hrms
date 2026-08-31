@@ -65,4 +65,19 @@ class Employee extends Model
     {
         return $this->belongsTo(JobTitle::class);
     }
+
+    public function department()
+    {
+        return $this->belongsTo(Department::class);
+    }
+
+    public function employmentStatus()
+    {
+        return $this->belongsTo(EmploymentStatus::class);
+    }
+
+    public function supervisor()
+    {
+        return $this->hasOne(Employee::class, 'supervisor_id', 'id');
+    }
 }

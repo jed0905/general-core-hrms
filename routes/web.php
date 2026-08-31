@@ -18,7 +18,6 @@ use App\Http\Controllers\Web\HrManagement\EmployeeController;
 use App\Http\Controllers\Web\SelfService\MyProfileController;
 use App\Http\Controllers\Web\SelfService\SelfServiceDashboard;
 use App\Http\Controllers\Web\Maintenance\OperatingUnitController;
-use App\Http\Controllers\Web\RolesAndPermissions\RolesController;
 use App\Http\Controllers\Web\SelfService\MyEntitlementController;
 use App\Http\Controllers\Web\SelfService\MyLeaveReportsController;
 use App\Http\Controllers\Web\Maintenance\MaintenanceRoleController;
@@ -131,40 +130,6 @@ Route::middleware(['auth', 'web'])->group(function () {
     Route::post('/my-account/send-otp', [MyAccountController::class, 'sendActivateOtpRequest'])->name('my-account.send-two-factor-otp');
     Route::post('/my-account/enable-two-factor', [MyAccountController::class, 'enableTwoFactorAuthentication'])->name('my-account-enable-two-factor');
 
-    // Roles and Permissions
-    // Roles
-    Route::prefix('role')->name('role.')->group(function () {
-
-        Route::controller(RolesController::class)->name('management.')->group(function () {
-            Route::get('/management', 'index')->name('index');
-            Route::get('/management/create', 'create')->name('create');
-            Route::post('/management/store', 'store')->name('store');
-            Route::get('/management/edit/{id}', 'edit')->name('edit');
-            Route::put('/management/{id}', 'update')->name('update');
-            Route::delete('/management/{id}', 'destroy')->name('destroy');
-        });
-    });
-
-    Route::prefix('permission')->name('permission.')->group(function () {
-
-        Route::controller(PermissionsController::class)->name('management.')->group(function () {
-            Route::get('/management', 'index')->name('index');
-            Route::get('/management/create', 'create')->name('create');
-            Route::post('/management/store', 'store')->name('store');
-            Route::get('/management/edit/{id}', 'edit')->name('edit');
-            Route::put('/management/{id}', 'update')->name('update');
-            Route::delete('/management/{id}', 'destroy')->name('destroy');
-        });
-    });
-
-    Route::prefix('role-permission')->name('role-permission.')->group(function () {
-
-        Route::controller(RolePermissionsController::class)->name('management.')->group(function () {
-            Route::get('/management', 'index')->name('index');
-            Route::post('/management/attach/{role}/{permission}', 'attachPermission')->name('attach');
-            Route::post('/management/detach/{role}/{permission}', 'detachPermission')->name('detach');
-        });
-    });
 
     Broadcast::routes(['middleware' => ['web', 'auth']]);
 

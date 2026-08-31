@@ -42,6 +42,10 @@ class RouteServiceProvider extends ServiceProvider
             Route::middleware(['auth', 'web'])
                 ->group(base_path('routes/Administration/web.php'));
 
+            // People Routes
+            Route::middleware(['auth', 'web'])
+                ->group(base_path('routes/People/web.php'));
+
             // HR Management Routes
             Route::middleware(['auth', 'web'])
                 ->group(base_path('routes/HrManagement/web.php'));

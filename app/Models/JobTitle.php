@@ -11,7 +11,7 @@ class JobTitle extends Model
         'job_description'
     ];
 
-    public function employee()
+    public function employees()
     {
         return $this->hasMany(Employee::class);
     }

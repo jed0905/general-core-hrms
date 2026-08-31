@@ -456,9 +456,9 @@ export default {
             {
               title: "Employees",
               icon: "mdi-account-multiple",
-              route: "hrmanagement.employee.index",
+              route: "people.employee.index",
               permission: "employee.view",
-              routePrefix: "hrmanagement.employee",
+              routePrefix: "people.employee",
             },
             {
               title: "Departments",
@@ -469,10 +469,10 @@ export default {
             },
             {
               title: "Job Titles",
-              icon: "mdi-briefcase",
-              route: "hrmanagement.jobstructure.position.index",
+              icon: "mdi-briefcase-outline",
+              route: "people.job-title.index",
               permission: "job_title.view",
-              routePrefix: "hrmanagement.jobstructure.position",
+              routePrefix: "people.job-title",
             },
             {
               title: "Employment Status",

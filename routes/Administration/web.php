@@ -4,7 +4,6 @@ use App\Http\Controllers\Web\Administration\Organization\CorporateBrandingContro
 use App\Http\Controllers\Web\Administration\Organization\DepartmentController;
 use App\Http\Controllers\Web\Administration\Organization\LocationController;
 use App\Http\Controllers\Web\Administration\Organization\OrganizationGeneralController;
-use App\Http\Controllers\Web\Administration\OrganizationController;
 use App\Http\Controllers\Web\Administration\RolePermissionController;
 use App\Http\Controllers\Web\Administration\UserManagementController;
 use Illuminate\Support\Facades\Route;
