@@ -12,7 +12,8 @@ class Location extends Model
         'zip_code',
         'address',
         'phone',
-        'notes'
+        'notes',
+        'is_main'
     ];
 
     public function employee()

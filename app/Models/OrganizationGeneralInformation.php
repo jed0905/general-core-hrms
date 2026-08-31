@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 class OrganizationGeneralInformation extends Model
 {
     protected $fillable = [
+        'name',
         'phone',
         'email',
         'country',

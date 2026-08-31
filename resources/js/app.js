@@ -1,24 +1,15 @@
-// javascript
-import './bootstrap'
-
 // css
 import '../css/app.css'
 
-// alpine.js
+// JS & Libraries
+import './bootstrap'
 import Alpine from 'alpinejs'
-window.Alpine = Alpine
-Alpine.start()
-
-// inertia
 import { createApp, h } from 'vue'
-import { createInertiaApp, Link, Head } from '@inertiajs/vue3'
+import { createInertiaApp, Link, Head, router } from '@inertiajs/vue3'
 import { resolvePageComponent } from 'laravel-vite-plugin/inertia-helpers'
+import { ZiggyVue } from '../../vendor/tightenco/ziggy/dist/vue.m'
 
-// ziggy routes
-import { ZiggyVue } from '../../vendor/tightenco/ziggy/dist/vue.m';
-// import { ZiggyVue } from 'ziggy';
-
-// vuetify
+// Vuetify
 import 'vuetify/styles'
 import '@mdi/font/css/materialdesignicons.css'
 import { createVuetify } from 'vuetify'
@@ -27,62 +18,87 @@ import * as labsComponents from 'vuetify/labs/components'
 import * as directives from 'vuetify/directives'
 import { aliases, mdi } from 'vuetify/iconsets/mdi'
 
-import Echo from 'laravel-echo';
-import Pusher from 'pusher-js'; // required dependency, even if using Reverb
+// Echo & Pusher
+import Echo from 'laravel-echo'
+import Pusher from 'pusher-js'
 
-if (window.Laravel.user) {
-    // window.Pusher = Pusher;
-
-    // window.Echo = new Echo({
-    //     broadcaster: 'reverb', // use 'reverb' for Laravel Reverb
-    //     key: import.meta.env.VITE_REVERB_APP_KEY,
-    //     wsHost: import.meta.env.VITE_REVERB_HOST,
-    //     wsPort: import.meta.env.VITE_REVERB_PORT ?? 80,
-    //     wssPort: import.meta.env.VITE_REVERB_PORT ?? 443,
-    //     forceTLS: false, // set true if using HTTPS
-    //     enabledTransports: ['ws', 'wss'],
-    // });
-}
-
-const vuetify = createVuetify({
-    components: {
-        ...components,
-        ...labsComponents,
-    },
-    directives,
-    icons: {
-        defaultSet: 'mdi',
-        aliases,
-        sets: {
-            mdi,
-        },
-    },
-    theme: {
-        themes: {
-            light: {
-                colors: {
-                    'starbucks-green': '#006241',
-                },
-            },
-        },
-    },
-})
-
-
-// vue toastification
-import Toast from 'vue-toastification';
-import { useToast } from 'vue-toastification';
+// Vue Toastification
+import Toast, { useToast } from 'vue-toastification'
 import 'vue-toastification/dist/index.css'
+
+// Initialize Top-Level Code
+window.Alpine = Alpine
+Alpine.start()
+
+if (window.Laravel?.user) {
+    // Echo configuration...
+}
 
 const appName = window.document.getElementsByTagName('title')[0]?.innerText || 'Laravel'
 
+// ... imports above remain unchanged ...
 
 createInertiaApp({
     title: (title) => `${title} - ${appName}`,
     resolve: (name) => resolvePageComponent(`./pages/${name}.vue`, import.meta.glob('./pages/**/*.vue')),
     setup({ el, App, props, plugin }) {
+        const initialBranding = props.initialPage.props.branding;
+
+        // Instantiate Vuetify with both light and dark themes
+        const vuetify = createVuetify({
+            components: {
+                ...components,
+                ...labsComponents,
+            },
+            directives,
+            icons: {
+                defaultSet: 'mdi',
+                aliases,
+                sets: {
+                    mdi,
+                },
+            },
+            theme: {
+                defaultTheme: localStorage.getItem('user_theme_mode') || 'light',
+                themes: {
+                    light: {
+                        colors: {
+                            'starbucks-green': '#006241',
+                            primary: initialBranding?.primary_color || '#1867C0',
+                            secondary: initialBranding?.secondary_color || '#5C6BC0',
+                        },
+                    },
+                    dark: {
+                        colors: {
+                            background: '#121212',
+                            surface: '#1E1E1E',
+                            'surface-variant': '#2D2D2D',
+                            'starbucks-green': '#006241',
+                            primary: initialBranding?.primary_color || '#1867C0',
+                            secondary: initialBranding?.secondary_color || '#5C6BC0',
+                        },
+                    },
+                },
+            },
+        });
+
+        // Sync dynamic database branding to both theme palettes
+        router.on('success', (event) => {
+            const branding = event.detail.page.props.branding;
+            if (branding) {
+                if (branding.primary_color) {
+                    vuetify.theme.themes.value.light.colors.primary = branding.primary_color;
+                    vuetify.theme.themes.value.dark.colors.primary = branding.primary_color;
+                }
+                if (branding.secondary_color) {
+                    vuetify.theme.themes.value.light.colors.secondary = branding.secondary_color;
+                    vuetify.theme.themes.value.dark.colors.secondary = branding.secondary_color;
+                }
+            }
+        });
+
         return createApp({ render: () => h(App, props) })
-            .use(ZiggyVue, Ziggy)
+            .use(ZiggyVue)
             .use(vuetify)
             .use(Toast, {
                 timeout: 3500,
@@ -94,7 +110,6 @@ createInertiaApp({
                 methods: {
                     showToast: function (message, type = 'default') {
                         const toast = useToast()
-                        // Use specific toast methods for better type recognition
                         if (type === 'success') {
                             toast.success(message)
                         } else if (type === 'error') {

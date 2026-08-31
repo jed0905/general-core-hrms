@@ -13,15 +13,15 @@ return new class extends Migration {
         Schema::create('organization_general_information', function (Blueprint $table) {
             $table->id();
             $table->string('name');
-            $table->string('phone');
-            $table->string('email');
+            $table->string('phone')->nullable();
+            $table->string('email')->nullable();
             $table->string('country');
             $table->string('province');
             $table->string('city');
             $table->string('zip_code');
-            $table->string('street1');
-            $table->string('street2');
-            $table->string('note');
+            $table->string('street1')->nullable();
+            $table->string('street2')->nullable();
+            $table->string('note')->nullable();
             $table->timestamps();
         });
     }

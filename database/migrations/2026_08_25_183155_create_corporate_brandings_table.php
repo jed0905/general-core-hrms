@@ -14,6 +14,8 @@ return new class extends Migration
         Schema::create('corporate_brandings', function (Blueprint $table) {
             $table->id();
             $table->binary('client_logo');
+            $table->string('primary_color', 7)->default('#1867C0')->nullable();
+            $table->string('secondary_color', 7)->default('#5C6BC0')->nullable();
             $table->timestamps();
         });
     }

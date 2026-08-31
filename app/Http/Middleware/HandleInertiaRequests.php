@@ -3,7 +3,9 @@
 namespace App\Http\Middleware;
 
 use App\Helpers\UserInformationHelper;
+use App\Models\CorporateBranding;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 use Inertia\Middleware;
 
 class HandleInertiaRequests extends Middleware
@@ -85,7 +87,16 @@ class HandleInertiaRequests extends Middleware
                 'error' => $request->session()->get('error'),
                 'psaLoadedData' => $request->session()->get('psaLoadedData'),
             ],
-            'psa_public_api_key' => config('app.psa.public_api_key'),
+            'branding' => function () {
+                $branding = CorporateBranding::first();
+                return $branding ? [
+                    'client_logo'     => $branding->client_logo ? Storage::url($branding->client_logo) : null,
+                    'primary_color'   => $branding->primary_color,
+                    'secondary_color' => $branding->secondary_color,
+                ] : null;
+            },
+
+
         ]);
     }
 }

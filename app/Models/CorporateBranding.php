@@ -11,5 +11,7 @@ class CorporateBranding extends Model
 
     protected $fillable = [
         'client_logo',
+        'primary_color',
+        'secondary_color'
     ];
 }

@@ -1,10 +1,16 @@
 <template>
   <v-app>
-    <!-- Top Navigation App Bar -->
-    <v-app-bar :elevation="1" class="pe-2 gradient-bg" height="64">
-      <!-- App Brand / Logo Section -->
+    <!-- Top Navigation App Bar with Dynamic Brand Color -->
+    <v-app-bar :elevation="1" color="primary" class="pe-2" height="64">
+      <!-- App Brand / Dynamic Logo Section -->
       <div class="d-flex align-center ms-4 me-6 cursor-pointer">
-        <img :src="Logo" width="40" height="40" class="me-2" />
+        <img
+          v-if="clientLogo"
+          :src="clientLogo"
+          width="40"
+          height="40"
+          class="me-2"
+        />
         <div class="d-flex flex-column text-white">
           <span class="text-subtitle-2 font-weight-bold leading-tight">
             {{ $page.props.company_shortcut }}
@@ -67,7 +73,7 @@
                 <Link
                   :href="route(item.route)"
                   preserve-state
-                  class="text-decoration-none text-black"
+                  class="text-decoration-none text-high-emphasis"
                 >
                   <v-list-item
                     link
@@ -90,6 +96,20 @@
 
       <!-- Right Action Items -->
       <div class="d-flex align-center">
+        <!-- 🌓 Theme Mode Toggle Button -->
+        <v-btn
+          icon
+          variant="text"
+          class="me-3 text-white"
+          size="small"
+          @click="toggleThemeMode"
+        >
+          <v-icon
+            :icon="isDarkMode ? 'mdi-weather-sunny' : 'mdi-weather-night'"
+            size="24"
+          />
+        </v-btn>
+
         <!-- 🔔 Notification Bell -->
         <v-menu
           v-model="notificationsMenu"
@@ -142,7 +162,7 @@
                   v-for="(notif, i) in visibleNotifications"
                   :key="i"
                   class="py-3 px-4"
-                  :class="{ 'bg-blue-grey-lighten-4': !notif.read_at }"
+                  :class="{ 'bg-surface-variant': !notif.read_at }"
                   style="white-space: normal; word-wrap: break-word"
                 >
                   <div class="flex justify-between w-100 items-start">
@@ -155,7 +175,7 @@
                       </v-list-item-title>
 
                       <v-list-item-subtitle
-                        class="notification-message text-grey-darken-1"
+                        class="notification-message text-medium-emphasis"
                         :class="{ 'font-weight-bold': !notif.read_at }"
                       >
                         {{ notif.data.message }}
@@ -220,7 +240,7 @@
           <v-list nav class="text-center">
             <Link
               :href="route('my-account.index')"
-              class="text-decoration-none text-black"
+              class="text-decoration-none text-high-emphasis"
             >
               <v-list-item title="My Account"></v-list-item>
             </Link>
@@ -248,7 +268,7 @@
             v-if="!group.items"
             :href="route(group.route)"
             preserve-state
-            class="text-decoration-none text-black"
+            class="text-decoration-none text-high-emphasis"
           >
             <v-list-item
               link
@@ -263,7 +283,7 @@
           <!-- Group Sub-items -->
           <template v-else>
             <v-list-subheader
-              class="text-uppercase text-grey-darken-1 font-weight-bold"
+              class="text-uppercase text-medium-emphasis font-weight-bold"
             >
               {{ group.title }}
             </v-list-subheader>
@@ -272,7 +292,7 @@
               <Link
                 :href="route(item.route)"
                 preserve-state
-                class="text-decoration-none text-black"
+                class="text-decoration-none text-high-emphasis"
               >
                 <v-list-item
                   link
@@ -302,13 +322,11 @@
 </template>
 
 <script>
-import Logo from "../../images/dmmmsu-logo.png";
 import ProfileImage from "../../images/sample-profile-images/female_prof_pic.jpg";
 
 export default {
   data() {
     return {
-      Logo,
       ProfileImage,
       mobileDrawer: false,
 
@@ -329,6 +347,22 @@ export default {
   },
 
   computed: {
+    clientLogo() {
+      let logo = this.$page.props.branding?.client_logo;
+      if (!logo) return null;
+
+      // Sanitization fallback in case DB stored raw physical paths
+      return logo
+        .replace("/storage/app/public/", "/storage/")
+        .replace("storage/app/public/", "/storage/")
+        .replace("/app/public/", "/storage/")
+        .replace("app/public/", "/storage/");
+    },
+
+    isDarkMode() {
+      return this.$vuetify.theme.global.current.dark;
+    },
+
     visibleNotifications() {
       return this.showAll ? this.notifications : this.notifications.slice(0, 5);
     },
@@ -369,7 +403,6 @@ export default {
           permission: "dashboard.view",
         },
 
-        // Employee Self-Service Top Nav Groups
         myProfile: {
           title: "My Profile",
           route: "self-service.my-profile.index",
@@ -417,7 +450,6 @@ export default {
           ],
         },
 
-        // Management Modules (using updated routes)
         people: {
           title: "People",
           items: [
@@ -529,16 +561,12 @@ export default {
 
         payroll: {
           title: "Payroll",
-          items: [
-            // Reserved for payroll routes when active
-          ],
+          items: [],
         },
 
         reports: {
           title: "Reports",
-          items: [
-            // Reserved for report routes when active
-          ],
+          items: [],
         },
 
         administration: {
@@ -551,33 +579,11 @@ export default {
               permission: "organization.view",
               routePrefix: "administration.organization",
             },
-            {
-              title: "Locations",
-              icon: "mdi-map-marker-radius",
-              route: "administration.organization.locations.index",
-              permission: "company.view",
-              routePrefix: "administration.locations",
-            },
-            {
-              title: "Users",
-              icon: "mdi-account-multiple-outline",
-              route: "administration.user.index",
-              permission: "user.view",
-              routePrefix: "administration.user",
-            },
-            {
-              title: "Roles & Permissions",
-              icon: "mdi-shield-lock",
-              route: "role.management.index",
-              permission: "role.view",
-              routePrefix: "administration.role",
-            },
           ],
         },
       };
     },
 
-    // Selected navigation bar layout determined by user role
     navItems() {
       if (this.isAdmin) {
         return [
@@ -601,7 +607,6 @@ export default {
         ];
       }
 
-      // Default Employee Role view
       return [
         this.modules.dashboard,
         this.modules.myProfile,
@@ -610,7 +615,6 @@ export default {
       ];
     },
 
-    // Final filter removing items or empty dropdown headers without granted permissions
     visibleNavItems() {
       return this.navItems
         .map((group) => {
@@ -634,6 +638,12 @@ export default {
   },
 
   methods: {
+    toggleThemeMode() {
+      const nextTheme = this.isDarkMode ? "light" : "dark";
+      this.$vuetify.theme.global.name = nextTheme;
+      localStorage.setItem("user_theme_mode", nextTheme);
+    },
+
     hasPermission(permission) {
       if (!permission) return true;
       return this.userPermissions.includes(permission);
@@ -720,19 +730,6 @@ export default {
 </script>
 
 <style scoped>
-.gradient-bg {
-  background: #006241;
-}
-
-.page-background {
-  background: linear-gradient(
-    226deg,
-    rgba(0, 98, 65, 0.1) 5%,
-    rgba(87, 199, 133, 0.1) 55%,
-    rgba(242, 199, 27, 0.1) 97%
-  );
-}
-
 .cursor-pointer {
   cursor: pointer;
 }
@@ -754,7 +751,7 @@ export default {
 }
 
 .active-nav-btn {
-  background-color: rgba(255, 255, 255, 0.18);
+  background-color: rgba(255, 255, 255, 0.22);
   font-weight: bold;
 }
 
@@ -766,5 +763,17 @@ export default {
   text-overflow: unset !important;
   display: block !important;
   line-height: 1.4;
+}
+
+.page-background {
+  transition: background-color 0.3s ease;
+}
+
+:deep(.v-theme--light .page-background) {
+  background-color: rgba(var(--v-theme-primary), 0.04);
+}
+
+:deep(.v-theme--dark .page-background) {
+  background-color: #121212;
 }
 </style>

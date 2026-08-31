@@ -14,4 +14,19 @@ class Department extends Model
         'parent_id',
     ];
 
+    /**
+     * Get the parent department that this department belongs to.
+     */
+    public function parent()
+    {
+        return $this->belongsTo(Department::class, 'parent_id');
+    }
+
+    /**
+     * Get all child departments under this department.
+     */
+    public function children()
+    {
+        return $this->hasMany(Department::class, 'parent_id');
+    }
 }
