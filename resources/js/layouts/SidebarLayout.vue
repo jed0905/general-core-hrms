@@ -586,6 +586,13 @@ export default {
               permission: "user.view",
               routePrefix: "administration.user",
             },
+            {
+              title: "Roles & Permissions",
+              icon: "mdi-shield-account-outline",
+              route: "administration.role.index",
+              permission: "role.view",
+              routePrefix: "administration.role",
+            },
           ],
         },
       };
