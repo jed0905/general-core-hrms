@@ -579,6 +579,13 @@ export default {
               permission: "organization.view",
               routePrefix: "administration.organization",
             },
+            {
+              title: "User Management",
+              icon: "mdi-account-cog", // Valid @mdi/font icon name
+              route: "administration.user.index",
+              permission: "user.view",
+              routePrefix: "administration.user",
+            },
           ],
         },
       };

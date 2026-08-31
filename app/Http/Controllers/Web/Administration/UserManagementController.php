@@ -2,133 +2,158 @@
 
 namespace App\Http\Controllers\Web\Administration;
 
-use Exception;
-use App\Models\User;
-use Inertia\Inertia;
-use App\Models\Employee;
-use Illuminate\Http\Request;
-use App\Services\UserService;
-use Illuminate\Support\Facades\DB;
-use Spatie\Permission\Models\Role;
 use App\Http\Controllers\Controller;
-use App\Http\Resources\UserResource;
-use Illuminate\Support\Facades\Hash;
-use App\Http\Resources\EmployeeResource;
-use App\Http\Requests\StoreUserFormRequest;
-use App\Http\Requests\UpdateUserFormRequest;
+use App\Models\User;
+use App\Services\UserService;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
+use Illuminate\Validation\Rules\Password;
+use Inertia\Inertia;
+use Inertia\Response;
 
 class UserManagementController extends Controller
 {
+    public function __construct(
+        protected UserService $userService
+    ) {}
+
     /**
-     * Display a listing of the resource.
+     * Display a paginated listing of users with search/status filters and form options.
      */
-    public function index(UserService $userService)
+    public function index(Request $request): Response
     {
+        $filters = $request->only(['search', 'status']);
+        $formData = $this->userService->getFormData();
+
         return Inertia::render('app/Administration/UserManagement/Index', [
-            'users' => $userService->index(),
-            'roles' => $userService->getRoles(),
-            'operatingUnits' => $userService->getOperatingUnits(),
+            'users'     => $this->userService->getPaginatedUsers($filters),
+            'filters'   => $filters,
+            'employees' => $formData['employees'],
+            'roles'     => $formData['roles'],
         ]);
     }
 
     /**
-     * Show the form for creating a new resource.
+     * Show form for creating a new user account.
      */
-    public function create(UserService $userService)
+    public function create(): Response
     {
-        $data = $userService->create();
+        $formData = $this->userService->getFormData();
 
         return Inertia::render('app/Administration/UserManagement/Create', [
-            'roles' => $data['roles'],
-            'employees' => $data['employees'],
+            'employees' => $formData['employees'],
+            'roles'     => $formData['roles'],
         ]);
     }
 
     /**
-     * Store a newly created resource in storage.
+     * Store a newly created user account.
      */
-    public function store(StoreUserFormRequest $request, UserService $userService)
+    public function store(Request $request): RedirectResponse
     {
+        $validated = $request->validate([
+            'username'    => ['required', 'string', 'max:255', 'unique:users,username'],
+            'password'    => ['required', Password::defaults()],
+            'employee_id' => ['nullable', 'exists:employees,id'],
+            'roles'       => ['nullable', 'array'],
+            'roles.*'     => ['string', 'exists:roles,name'],
+        ]);
 
-        try {
-            $validated = $request->validated();
+        $this->userService->createUser($validated);
 
-            $userService->store($validated);
-            return redirect()->back();
-
-            // return redirect()->route('administration.user.index');
-        } catch (Exception $e) {
-            return redirect()
-                ->back()
-                ->withErrors(['error' => 'Failed to create user: ' . $e->getMessage()]);
-        }
-
+        return redirect()->route('administration.user.index')
+            ->with('success', 'User account created successfully.');
     }
 
     /**
-     * Show the form for editing the specified resource.
+     * Display detailed user information.
      */
-    public function edit(Request $request, string $id, UserService $userService)
+    public function show(User $user): Response
     {
-     
-        if (!$request->hasValidSignature()) {
-            abort(403, 'Invalid or expired link');
-        }
+        $user->load(['employee', 'roles', 'permissions']);
 
-        $data = $userService->edit($id);
-
-        return Inertia::render('app/Administration/UserManagement/Edit', [
-            'user' => $data['user'],
-            'roles' => $data['roles'],
+        return Inertia::render('app/Administration/Users/Show', [
+            'user' => $user,
         ]);
     }
 
     /**
-     * Update the specified resource in storage.
+     * Show form for editing user details.
      */
-    public function update(UpdateUserFormRequest $request, string $id, UserService $userService)
+    public function edit(User $user): Response
     {
-        try {
+        $user->load(['roles']);
+        $formData = $this->userService->getFormData();
 
-            $userService->update($request->validated(), $id);
-
-            return redirect()->route('administration.user.index');
-
-        } catch (Exception $e) {
-
-            return redirect()->back()->withErrors(['error' => 'Failed to update user: ' . $e->getMessage()]);
-        }
-
+        return Inertia::render('app/Administration/Users/Edit', [
+            'user'      => $user,
+            'employees' => $formData['employees'],
+            'roles'     => $formData['roles'],
+        ]);
     }
 
     /**
-     * Remove the specified resource from storage.
+     * Update existing user attributes.
      */
-    public function destroy(string $id, UserService $userService)
+    public function update(Request $request, User $user): RedirectResponse
     {
-        try {
-            $userService->delete($id);
+        $validated = $request->validate([
+            'username'    => ['required', 'string', 'max:255', Rule::unique('users')->ignore($user->id)],
+            'employee_id' => ['nullable', 'exists:employees,id'],
+        ]);
 
-            return redirect()->route('administration.user.index');
-        } catch (Exception $e) {
-            return redirect()->back()->withErrors(['error' => 'Failed to delete user: ' . $e->getMessage()]);
-        }
+        $this->userService->updateUser($user, $validated);
+
+        return redirect()->back()->with('success', 'User details updated successfully.');
     }
 
     /**
-     * Reset user password to default (Refer to env for the default password).
+     * Deactivate user account.
      */
-    public function resetPassword(string $id, UserService $userService)
+    public function deactivate(User $user): RedirectResponse
     {
-        // Validate user exists
-        try {
+        $this->userService->deactivateUser($user);
 
-            $userService->adminResetUserPassword($id);
-
-            return redirect()->route('administration.user.index');
-        } catch (Exception $e) {
-            return redirect()->back()->withErrors(['error' => 'Failed to reset password: ' . $e->getMessage()]);
-        }
+        return redirect()->back()->with('success', 'User account deactivated successfully.');
     }
 
+    /**
+     * Activate user account and reset failed login attempts.
+     */
+    public function activate(User $user): RedirectResponse
+    {
+        $this->userService->activateUser($user);
+
+        return redirect()->back()->with('success', 'User account activated successfully.');
+    }
+
+    /**
+     * Reset user password.
+     */
+    public function resetPassword(Request $request, User $user): RedirectResponse
+    {
+        $validated = $request->validate([
+            'password' => ['required', 'confirmed', Password::defaults()],
+        ]);
+
+        $this->userService->resetPassword($user, $validated['password']);
+
+        return redirect()->back()->with('success', 'Password reset successfully.');
+    }
+
+    /**
+     * Update user roles using Spatie permission package.
+     */
+    public function assignRole(Request $request, User $user): RedirectResponse
+    {
+        $validated = $request->validate([
+            'roles'   => ['required', 'array'],
+            'roles.*' => ['string', 'exists:roles,name'],
+        ]);
+
+        $this->userService->assignRoles($user, $validated['roles']);
+
+        return redirect()->back()->with('success', 'User roles updated successfully.');
+    }
 }

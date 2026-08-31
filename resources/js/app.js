@@ -1,10 +1,10 @@
-// css
+// CSS
 import '../css/app.css'
 
 // JS & Libraries
 import './bootstrap'
 import Alpine from 'alpinejs'
-import { createApp, h } from 'vue'
+import { createApp, h, ref } from 'vue'
 import { createInertiaApp, Link, Head, router } from '@inertiajs/vue3'
 import { resolvePageComponent } from 'laravel-vite-plugin/inertia-helpers'
 import { ZiggyVue } from '../../vendor/tightenco/ziggy/dist/vue.m'
@@ -17,6 +17,7 @@ import * as components from 'vuetify/components'
 import * as labsComponents from 'vuetify/labs/components'
 import * as directives from 'vuetify/directives'
 import { aliases, mdi } from 'vuetify/iconsets/mdi'
+import { VOverlay, VProgressCircular } from 'vuetify/components'
 
 // Echo & Pusher
 import Echo from 'laravel-echo'
@@ -36,11 +37,17 @@ if (window.Laravel?.user) {
 
 const appName = window.document.getElementsByTagName('title')[0]?.innerText || 'Laravel'
 
-// ... imports above remain unchanged ...
+// Global navigation state for centered loading spinner
+const isNavigating = ref(false)
+
+router.on('start', () => { isNavigating.value = true })
+router.on('finish', () => { isNavigating.value = false })
+router.on('cancel', () => { isNavigating.value = false })
 
 createInertiaApp({
     title: (title) => `${title} - ${appName}`,
     resolve: (name) => resolvePageComponent(`./pages/${name}.vue`, import.meta.glob('./pages/**/*.vue')),
+    progress: false,
     setup({ el, App, props, plugin }) {
         const initialBranding = props.initialPage.props.branding;
 
@@ -97,7 +104,35 @@ createInertiaApp({
             }
         });
 
-        return createApp({ render: () => h(App, props) })
+        return createApp({
+            render: () =>
+                h('div', [
+                    // Render Inertia App
+                    h(App, props),
+
+                    // Render Centered Vuetify Loading Overlay
+                    h(
+                        VOverlay,
+                        {
+                            modelValue: isNavigating.value,
+                            class: 'align-center justify-center',
+                            persistent: true,
+                            scrim: '#000000',
+                            opacity: 0.3,
+                            zIndex: 99999,
+                        },
+                        {
+                            default: () =>
+                                h(VProgressCircular, {
+                                    color: 'primary',
+                                    size: 64,
+                                    width: 5,
+                                    indeterminate: true,
+                                }),
+                        }
+                    ),
+                ]),
+        })
             .use(ZiggyVue)
             .use(vuetify)
             .use(Toast, {
@@ -133,8 +168,5 @@ createInertiaApp({
             .component('Head', Head)
             .use(plugin)
             .mount(el)
-    },
-    progress: {
-        color: '#4CAF50',
     },
 })
