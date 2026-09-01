@@ -12,4 +12,19 @@ class WorkScheduleDay extends Model
         'shift_id',
         'is_working_day',
     ];
+
+    protected $casts = [
+        'day_of_week' => 'integer',
+        'is_working_day' => 'boolean',
+    ];
+
+    public function schedule()
+    {
+        return $this->belongsTo(WorkSchedule::class, 'work_schedule_id');
+    }
+
+    public function shift()
+    {
+        return $this->belongsTo(Shift::class, 'shift_id');
+    }
 }

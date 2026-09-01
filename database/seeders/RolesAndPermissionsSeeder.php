@@ -180,6 +180,12 @@ class RolesAndPermissionsSeeder extends Seeder
             'job_title.update',
             'job_title.archive',
 
+            // Employment Status Management
+            'employment_status.view',
+            'employment_status.create',
+            'employment_status.update',
+            'employment_status.archive',
+
             // Role Management
             'role.view',
             'role.create',

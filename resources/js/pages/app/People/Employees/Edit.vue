@@ -1,121 +1,3 @@
-<script setup>
-import { ref } from "vue";
-import { Head, useForm } from "@inertiajs/vue3";
-import SidebarLayout from "@/Layouts/SidebarLayout.vue";
-
-const props = defineProps({
-  employee: {
-    type: Object,
-    required: true,
-  },
-  options: {
-    type: Object,
-    default: () => ({}),
-  },
-});
-
-// Photo & Signature Preview States
-const photoPreview = ref(
-  props.employee.photo ? `/storage/${props.employee.photo}` : null
-);
-const signaturePreview = ref(
-  props.employee.e_signature ? `/storage/${props.employee.e_signature}` : null
-);
-
-// Inertia Form Setup initialized with Employee Data
-const form = useForm({
-  _method: "put",
-  employee_number: props.employee.employee_number || "",
-  emp_first_name: props.employee.emp_first_name || "",
-  emp_last_name: props.employee.emp_last_name || "",
-  emp_middle_name: props.employee.emp_middle_name || "",
-  emp_suffix: props.employee.emp_suffix || "",
-  emp_birthday: props.employee.emp_birthday || null,
-  emp_sex: props.employee.emp_sex || "male",
-  emp_marital_status: props.employee.emp_marital_status || null,
-  emp_nationality_id: props.employee.emp_nationality_id || null,
-  photo: null,
-  e_signature: null,
-
-  // Contact & Address
-  street1: props.employee.street1 || "",
-  street2: props.employee.street2 || "",
-  city: props.employee.city || "",
-  province: props.employee.province || "",
-  zip_code: props.employee.zip_code || "",
-  country_id: props.employee.country_id || "",
-  home_telephone_no: props.employee.home_telephone_no || "",
-  mobile_no: props.employee.mobile_no || "",
-  work_no: props.employee.work_no || "",
-  work_email: props.employee.work_email || "",
-  other_email: props.employee.other_email || "",
-
-  // Employment Details
-  joined_date: props.employee.joined_date || null,
-  job_title_id: props.employee.job_title_id || null,
-  department_id: props.employee.department_id || null,
-  location_id: props.employee.location_id || null,
-  employment_status_id: props.employee.employment_status_id || null,
-  supervisor_id: props.employee.supervisor_id || null,
-  status: props.employee.status || "active",
-});
-
-// Options
-const sexOptions = [
-  { title: "Male", value: "male" },
-  { title: "Female", value: "female" },
-  { title: "Other", value: "other" },
-];
-
-const maritalStatusOptions = [
-  { title: "Single", value: "single" },
-  { title: "Married", value: "married" },
-  { title: "Widowed", value: "widowed" },
-  { title: "Divorced", value: "divorced" },
-  { title: "Separated", value: "separated" },
-];
-
-const statusOptions = [
-  { title: "Active", value: "active" },
-  { title: "On Leave", value: "on_leave" },
-  { title: "Terminated", value: "terminated" },
-  { title: "Archived", value: "archived" },
-];
-
-// File Handlers
-const handlePhotoChange = (file) => {
-  if (file) {
-    const rawFile = Array.isArray(file) ? file[0] : file;
-    form.photo = rawFile;
-    photoPreview.value = URL.createObjectURL(rawFile);
-  } else {
-    form.photo = null;
-    photoPreview.value = props.employee.photo
-      ? `/storage/${props.employee.photo}`
-      : null;
-  }
-};
-
-const handleSignatureChange = (file) => {
-  if (file) {
-    const rawFile = Array.isArray(file) ? file[0] : file;
-    form.e_signature = rawFile;
-    signaturePreview.value = URL.createObjectURL(rawFile);
-  } else {
-    form.e_signature = null;
-    signaturePreview.value = props.employee.e_signature
-      ? `/storage/${props.employee.e_signature}`
-      : null;
-  }
-};
-
-const submit = () => {
-  form.post(route("people.employee.update", props.employee.id), {
-    preserveScroll: true,
-  });
-};
-</script>
-
 <template>
   <SidebarLayout>
     <Head
@@ -128,7 +10,6 @@ const submit = () => {
         class="d-flex align-center justify-space-between flex-wrap ga-3 mb-6"
       >
         <div class="d-flex align-center ga-3">
-          <!-- Back Button -->
           <Link :href="route('people.employee.index')">
             <v-btn
               icon="mdi-arrow-left"
@@ -143,8 +24,8 @@ const submit = () => {
               {{ employee.emp_last_name }}
             </h1>
             <p class="text-body-2 text-medium-emphasis">
-              Update personal information, contact records, or employment
-              parameters.
+              Update personal information, contact records, education, or
+              employment parameters.
             </p>
           </div>
         </div>
@@ -172,331 +53,379 @@ const submit = () => {
         </div>
       </div>
 
+      <!-- Navigation Tabs -->
+      <v-tabs v-model="activeTab" color="primary" class="mb-6 border-b">
+        <v-tab value="personal" prepend-icon="mdi-account-outline">
+          Personal & Contact
+        </v-tab>
+        <v-tab value="job" prepend-icon="mdi-briefcase-outline">
+          Job Information
+        </v-tab>
+        <v-tab value="education" prepend-icon="mdi-school-outline">
+          Education
+        </v-tab>
+        <v-tab value="experience" prepend-icon="mdi-history">
+          Work Experience
+        </v-tab>
+      </v-tabs>
+
       <form @submit.prevent="submit">
-        <v-row>
-          <!-- Left Column: Personal Information & Media -->
-          <v-col cols="12" lg="8">
-            <!-- Personal Information Card -->
-            <v-card variant="outlined" class="rounded-lg mb-6">
-              <v-card-title
-                class="text-subtitle-1 font-weight-bold py-3 px-5 border-b d-flex align-center ga-2"
-              >
-                <v-icon
-                  icon="mdi-account-outline"
-                  color="primary"
-                  size="small"
-                />
-                Personal Information
-              </v-card-title>
-
-              <v-card-text class="pa-5">
-                <!-- Avatar Upload Section -->
-                <div class="d-flex align-center ga-4 mb-6">
-                  <v-avatar
-                    size="72"
-                    color="primary"
-                    variant="tonal"
-                    class="border"
+        <v-window v-model="activeTab">
+          <!-- TAB 1: Personal & Contact Details -->
+          <v-window-item value="personal">
+            <v-row>
+              <v-col cols="12" lg="8">
+                <!-- Personal Information Card -->
+                <v-card variant="outlined" class="rounded-lg mb-6">
+                  <v-card-title
+                    class="text-subtitle-1 font-weight-bold py-3 px-5 border-b d-flex align-center ga-2"
                   >
-                    <v-img
-                      v-if="photoPreview"
-                      :src="photoPreview"
-                      alt="Preview"
-                      cover
-                    />
                     <v-icon
-                      v-else
-                      icon="mdi-camera-outline"
-                      size="32"
-                      color="medium-emphasis"
+                      icon="mdi-account-outline"
+                      color="primary"
+                      size="small"
                     />
-                  </v-avatar>
+                    Personal Information
+                  </v-card-title>
 
-                  <div class="flex-grow-1">
-                    <v-file-input
-                      accept="image/*"
-                      label="Change Photo"
-                      variant="outlined"
-                      density="compact"
-                      prepend-icon=""
-                      prepend-inner-icon="mdi-paperclip"
-                      hide-details="auto"
-                      :error-messages="form.errors.photo"
-                      @update:model-value="handlePhotoChange"
-                    />
-                    <div class="text-caption text-medium-emphasis mt-1">
-                      Allowed formats: JPG, PNG, WEBP (Max 2MB)
+                  <v-card-text class="pa-5">
+                    <!-- Avatar Upload Section -->
+                    <div class="d-flex align-center ga-4 mb-6">
+                      <v-avatar
+                        size="72"
+                        color="primary"
+                        variant="tonal"
+                        class="border"
+                      >
+                        <v-img
+                          v-if="photoPreview"
+                          :src="photoPreview"
+                          alt="Preview"
+                          cover
+                        />
+                        <v-icon
+                          v-else
+                          icon="mdi-camera-outline"
+                          size="32"
+                          color="medium-emphasis"
+                        />
+                      </v-avatar>
+
+                      <div class="flex-grow-1">
+                        <v-file-input
+                          accept="image/*"
+                          label="Change Photo"
+                          variant="outlined"
+                          density="compact"
+                          prepend-icon=""
+                          prepend-inner-icon="mdi-paperclip"
+                          hide-details="auto"
+                          :error-messages="form.errors.photo"
+                          @update:model-value="handlePhotoChange"
+                        />
+                        <div class="text-caption text-medium-emphasis mt-1">
+                          Allowed formats: JPG, PNG, WEBP (Max 2MB)
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                </div>
 
-                <v-row density="compact">
-                  <!-- Employee Number -->
-                  <v-col cols="12" sm="6">
-                    <v-text-field
-                      v-model="form.employee_number"
-                      label="Employee ID / Number *"
-                      variant="outlined"
-                      density="compact"
-                      :error-messages="form.errors.employee_number"
+                    <v-row density="compact">
+                      <v-col cols="12" sm="6">
+                        <v-text-field
+                          v-model="form.employee_number"
+                          label="Employee ID / Number *"
+                          variant="outlined"
+                          density="compact"
+                          :error-messages="form.errors.employee_number"
+                        />
+                      </v-col>
+
+                      <v-col cols="12" sm="6">
+                        <v-select
+                          v-model="form.status"
+                          :items="statusOptions"
+                          item-title="title"
+                          item-value="value"
+                          label="Account Status *"
+                          variant="outlined"
+                          density="compact"
+                          :error-messages="form.errors.status"
+                        />
+                      </v-col>
+
+                      <v-col cols="12" sm="6" md="3">
+                        <v-text-field
+                          v-model="form.emp_first_name"
+                          label="First Name *"
+                          variant="outlined"
+                          density="compact"
+                          :error-messages="form.errors.emp_first_name"
+                        />
+                      </v-col>
+
+                      <v-col cols="12" sm="6" md="3">
+                        <v-text-field
+                          v-model="form.emp_middle_name"
+                          label="Middle Name"
+                          variant="outlined"
+                          density="compact"
+                          :error-messages="form.errors.emp_middle_name"
+                        />
+                      </v-col>
+
+                      <v-col cols="12" sm="6" md="3">
+                        <v-text-field
+                          v-model="form.emp_last_name"
+                          label="Last Name *"
+                          variant="outlined"
+                          density="compact"
+                          :error-messages="form.errors.emp_last_name"
+                        />
+                      </v-col>
+
+                      <v-col cols="12" sm="6" md="3">
+                        <v-text-field
+                          v-model="form.emp_suffix"
+                          label="Suffix"
+                          variant="outlined"
+                          density="compact"
+                          :error-messages="form.errors.emp_suffix"
+                        />
+                      </v-col>
+
+                      <v-col cols="12" sm="6">
+                        <v-text-field
+                          v-model="form.emp_birthday"
+                          type="date"
+                          label="Birth Date"
+                          variant="outlined"
+                          density="compact"
+                          :error-messages="form.errors.emp_birthday"
+                        />
+                      </v-col>
+
+                      <v-col cols="12" sm="6">
+                        <v-select
+                          v-model="form.emp_sex"
+                          :items="sexOptions"
+                          item-title="title"
+                          item-value="value"
+                          label="Sex *"
+                          variant="outlined"
+                          density="compact"
+                          :error-messages="form.errors.emp_sex"
+                        />
+                      </v-col>
+
+                      <v-col cols="12" sm="6">
+                        <v-select
+                          v-model="form.emp_marital_status"
+                          :items="maritalStatusOptions"
+                          item-title="title"
+                          item-value="value"
+                          label="Marital Status"
+                          variant="outlined"
+                          density="compact"
+                          clearable
+                          :error-messages="form.errors.emp_marital_status"
+                        />
+                      </v-col>
+
+                      <v-col cols="12" sm="6">
+                        <v-select
+                          v-model="form.emp_nationality_id"
+                          :items="options.nationalities || []"
+                          item-title="name"
+                          item-value="id"
+                          label="Nationality"
+                          variant="outlined"
+                          density="compact"
+                          clearable
+                          :error-messages="form.errors.emp_nationality_id"
+                        />
+                      </v-col>
+                    </v-row>
+                  </v-card-text>
+                </v-card>
+
+                <!-- Contact & Address Details Card -->
+                <v-card variant="outlined" class="rounded-lg mb-6">
+                  <v-card-title
+                    class="text-subtitle-1 font-weight-bold py-3 px-5 border-b d-flex align-center ga-2"
+                  >
+                    <v-icon
+                      icon="mdi-email-outline"
+                      color="primary"
+                      size="small"
                     />
-                  </v-col>
+                    Contact & Address Details
+                  </v-card-title>
 
-                  <!-- Status -->
-                  <v-col cols="12" sm="6">
-                    <v-select
-                      v-model="form.status"
-                      :items="statusOptions"
-                      item-title="title"
-                      item-value="value"
-                      label="Account Status *"
-                      variant="outlined"
-                      density="compact"
-                      :error-messages="form.errors.status"
-                    />
-                  </v-col>
+                  <v-card-text class="pa-5">
+                    <v-row density="compact">
+                      <v-col cols="12" sm="6">
+                        <v-text-field
+                          v-model="form.work_email"
+                          type="email"
+                          label="Work Email"
+                          variant="outlined"
+                          density="compact"
+                          :error-messages="form.errors.work_email"
+                        />
+                      </v-col>
 
-                  <!-- First Name -->
-                  <v-col cols="12" sm="6" md="3">
-                    <v-text-field
-                      v-model="form.emp_first_name"
-                      label="First Name *"
-                      variant="outlined"
-                      density="compact"
-                      :error-messages="form.errors.emp_first_name"
-                    />
-                  </v-col>
+                      <v-col cols="12" sm="6">
+                        <v-text-field
+                          v-model="form.other_email"
+                          type="email"
+                          label="Personal / Other Email"
+                          variant="outlined"
+                          density="compact"
+                          :error-messages="form.errors.other_email"
+                        />
+                      </v-col>
 
-                  <!-- Middle Name -->
-                  <v-col cols="12" sm="6" md="3">
-                    <v-text-field
-                      v-model="form.emp_middle_name"
-                      label="Middle Name"
-                      variant="outlined"
-                      density="compact"
-                      :error-messages="form.errors.emp_middle_name"
-                    />
-                  </v-col>
+                      <v-col cols="12" sm="4">
+                        <v-text-field
+                          v-model="form.mobile_no"
+                          label="Mobile Number"
+                          variant="outlined"
+                          density="compact"
+                          :error-messages="form.errors.mobile_no"
+                        />
+                      </v-col>
 
-                  <!-- Last Name -->
-                  <v-col cols="12" sm="6" md="3">
-                    <v-text-field
-                      v-model="form.emp_last_name"
-                      label="Last Name *"
-                      variant="outlined"
-                      density="compact"
-                      :error-messages="form.errors.emp_last_name"
-                    />
-                  </v-col>
+                      <v-col cols="12" sm="4">
+                        <v-text-field
+                          v-model="form.work_no"
+                          label="Work Telephone"
+                          variant="outlined"
+                          density="compact"
+                          :error-messages="form.errors.work_no"
+                        />
+                      </v-col>
 
-                  <!-- Suffix -->
-                  <v-col cols="12" sm="6" md="3">
-                    <v-text-field
-                      v-model="form.emp_suffix"
-                      label="Suffix"
-                      variant="outlined"
-                      density="compact"
-                      :error-messages="form.errors.emp_suffix"
-                    />
-                  </v-col>
+                      <v-col cols="12" sm="4">
+                        <v-text-field
+                          v-model="form.home_telephone_no"
+                          label="Home Telephone"
+                          variant="outlined"
+                          density="compact"
+                          :error-messages="form.errors.home_telephone_no"
+                        />
+                      </v-col>
 
-                  <!-- Birthday -->
-                  <v-col cols="12" sm="6">
-                    <v-text-field
-                      v-model="form.emp_birthday"
-                      type="date"
-                      label="Birth Date"
-                      variant="outlined"
-                      density="compact"
-                      :error-messages="form.errors.emp_birthday"
-                    />
-                  </v-col>
+                      <v-col cols="12" sm="6">
+                        <v-text-field
+                          v-model="form.street1"
+                          label="Address Line 1"
+                          variant="outlined"
+                          density="compact"
+                          :error-messages="form.errors.street1"
+                        />
+                      </v-col>
 
-                  <!-- Sex -->
-                  <v-col cols="12" sm="6">
-                    <v-select
-                      v-model="form.emp_sex"
-                      :items="sexOptions"
-                      item-title="title"
-                      item-value="value"
-                      label="Sex *"
-                      variant="outlined"
-                      density="compact"
-                      :error-messages="form.errors.emp_sex"
-                    />
-                  </v-col>
+                      <v-col cols="12" sm="6">
+                        <v-text-field
+                          v-model="form.street2"
+                          label="Address Line 2"
+                          variant="outlined"
+                          density="compact"
+                          :error-messages="form.errors.street2"
+                        />
+                      </v-col>
 
-                  <!-- Marital Status -->
-                  <v-col cols="12" sm="6">
-                    <v-select
-                      v-model="form.emp_marital_status"
-                      :items="maritalStatusOptions"
-                      item-title="title"
-                      item-value="value"
-                      label="Marital Status"
-                      variant="outlined"
-                      density="compact"
-                      clearable
-                      :error-messages="form.errors.emp_marital_status"
-                    />
-                  </v-col>
+                      <v-col cols="12" sm="6" md="3">
+                        <v-text-field
+                          v-model="form.city"
+                          label="City"
+                          variant="outlined"
+                          density="compact"
+                          :error-messages="form.errors.city"
+                        />
+                      </v-col>
 
-                  <!-- Nationality -->
-                  <v-col cols="12" sm="6">
-                    <v-select
-                      v-model="form.emp_nationality_id"
-                      :items="options.nationalities || []"
-                      item-title="name"
-                      item-value="id"
-                      label="Nationality"
-                      variant="outlined"
-                      density="compact"
-                      clearable
-                      :error-messages="form.errors.emp_nationality_id"
-                    />
-                  </v-col>
-                </v-row>
-              </v-card-text>
-            </v-card>
+                      <v-col cols="12" sm="6" md="3">
+                        <v-text-field
+                          v-model="form.province"
+                          label="Province / State"
+                          variant="outlined"
+                          density="compact"
+                          :error-messages="form.errors.province"
+                        />
+                      </v-col>
 
-            <!-- Contact & Address Details Card -->
-            <v-card variant="outlined" class="rounded-lg mb-6">
-              <v-card-title
-                class="text-subtitle-1 font-weight-bold py-3 px-5 border-b d-flex align-center ga-2"
-              >
-                <v-icon icon="mdi-email-outline" color="primary" size="small" />
-                Contact & Address Details
-              </v-card-title>
+                      <v-col cols="12" sm="6" md="3">
+                        <v-text-field
+                          v-model="form.zip_code"
+                          label="Zip / Postal Code"
+                          variant="outlined"
+                          density="compact"
+                          :error-messages="form.errors.zip_code"
+                        />
+                      </v-col>
 
-              <v-card-text class="pa-5">
-                <v-row density="compact">
-                  <!-- Emails -->
-                  <v-col cols="12" sm="6">
-                    <v-text-field
-                      v-model="form.work_email"
-                      type="email"
-                      label="Work Email"
-                      variant="outlined"
-                      density="compact"
-                      :error-messages="form.errors.work_email"
-                    />
-                  </v-col>
+                      <v-col cols="12" sm="6" md="3">
+                        <v-text-field
+                          v-model="form.country_id"
+                          label="Country"
+                          variant="outlined"
+                          density="compact"
+                          :error-messages="form.errors.country_id"
+                        />
+                      </v-col>
+                    </v-row>
+                  </v-card-text>
+                </v-card>
+              </v-col>
 
-                  <v-col cols="12" sm="6">
-                    <v-text-field
-                      v-model="form.other_email"
-                      type="email"
-                      label="Personal / Other Email"
-                      variant="outlined"
-                      density="compact"
-                      :error-messages="form.errors.other_email"
-                    />
-                  </v-col>
+              <v-col cols="12" lg="4">
+                <!-- E-Signature Card -->
+                <v-card variant="outlined" class="rounded-lg mb-6">
+                  <v-card-title
+                    class="text-subtitle-1 font-weight-bold py-3 px-5 border-b d-flex align-center ga-2"
+                  >
+                    <v-icon icon="mdi-draw" color="primary" size="small" />
+                    Digital E-Signature
+                  </v-card-title>
 
-                  <!-- Phone Numbers -->
-                  <v-col cols="12" sm="4">
-                    <v-text-field
-                      v-model="form.mobile_no"
-                      label="Mobile Number"
-                      variant="outlined"
-                      density="compact"
-                      :error-messages="form.errors.mobile_no"
-                    />
-                  </v-col>
+                  <v-card-text class="pa-5">
+                    <div class="mb-3">
+                      <div
+                        v-if="signaturePreview"
+                        class="border rounded-lg pa-2 text-center bg-surface-variant mb-2"
+                      >
+                        <v-img
+                          :src="signaturePreview"
+                          max-height="100"
+                          contain
+                          alt="Signature Preview"
+                        />
+                      </div>
 
-                  <v-col cols="12" sm="4">
-                    <v-text-field
-                      v-model="form.work_no"
-                      label="Work Telephone"
-                      variant="outlined"
-                      density="compact"
-                      :error-messages="form.errors.work_no"
-                    />
-                  </v-col>
+                      <v-file-input
+                        accept="image/*"
+                        label="Change Signature"
+                        variant="outlined"
+                        density="compact"
+                        prepend-icon=""
+                        prepend-inner-icon="mdi-paperclip"
+                        hide-details="auto"
+                        :error-messages="form.errors.e_signature"
+                        @update:model-value="handleSignatureChange"
+                      />
+                      <div class="text-caption text-medium-emphasis mt-1">
+                        Upload a transparent PNG signature file.
+                      </div>
+                    </div>
+                  </v-card-text>
+                </v-card>
+              </v-col>
+            </v-row>
+          </v-window-item>
 
-                  <v-col cols="12" sm="4">
-                    <v-text-field
-                      v-model="form.home_telephone_no"
-                      label="Home Telephone"
-                      variant="outlined"
-                      density="compact"
-                      :error-messages="form.errors.home_telephone_no"
-                    />
-                  </v-col>
-
-                  <!-- Address Line 1 -->
-                  <v-col cols="12" sm="6">
-                    <v-text-field
-                      v-model="form.street1"
-                      label="Address Line 1"
-                      variant="outlined"
-                      density="compact"
-                      :error-messages="form.errors.street1"
-                    />
-                  </v-col>
-
-                  <!-- Address Line 2 -->
-                  <v-col cols="12" sm="6">
-                    <v-text-field
-                      v-model="form.street2"
-                      label="Address Line 2"
-                      variant="outlined"
-                      density="compact"
-                      :error-messages="form.errors.street2"
-                    />
-                  </v-col>
-
-                  <!-- City -->
-                  <v-col cols="12" sm="6" md="3">
-                    <v-text-field
-                      v-model="form.city"
-                      label="City"
-                      variant="outlined"
-                      density="compact"
-                      :error-messages="form.errors.city"
-                    />
-                  </v-col>
-
-                  <!-- Province -->
-                  <v-col cols="12" sm="6" md="3">
-                    <v-text-field
-                      v-model="form.province"
-                      label="Province / State"
-                      variant="outlined"
-                      density="compact"
-                      :error-messages="form.errors.province"
-                    />
-                  </v-col>
-
-                  <!-- Zip Code -->
-                  <v-col cols="12" sm="6" md="3">
-                    <v-text-field
-                      v-model="form.zip_code"
-                      label="Zip / Postal Code"
-                      variant="outlined"
-                      density="compact"
-                      :error-messages="form.errors.zip_code"
-                    />
-                  </v-col>
-
-                  <!-- Country -->
-                  <v-col cols="12" sm="6" md="3">
-                    <v-text-field
-                      v-model="form.country_id"
-                      label="Country"
-                      variant="outlined"
-                      density="compact"
-                      :error-messages="form.errors.country_id"
-                    />
-                  </v-col>
-                </v-row>
-              </v-card-text>
-            </v-card>
-          </v-col>
-
-          <!-- Right Column: Employment Assignment & E-Signature -->
-          <v-col cols="12" lg="4">
-            <!-- Job Assignment Card -->
+          <!-- TAB 2: Job Information -->
+          <v-window-item value="job">
             <v-card variant="outlined" class="rounded-lg mb-6">
               <v-card-title
                 class="text-subtitle-1 font-weight-bold py-3 px-5 border-b d-flex align-center ga-2"
@@ -511,8 +440,7 @@ const submit = () => {
 
               <v-card-text class="pa-5">
                 <v-row density="compact">
-                  <!-- Joined Date -->
-                  <v-col cols="12">
+                  <v-col cols="12" sm="6">
                     <v-text-field
                       v-model="form.joined_date"
                       type="date"
@@ -523,8 +451,7 @@ const submit = () => {
                     />
                   </v-col>
 
-                  <!-- Department -->
-                  <v-col cols="12">
+                  <v-col cols="12" sm="6">
                     <v-select
                       v-model="form.department_id"
                       :items="options.departments || []"
@@ -538,12 +465,11 @@ const submit = () => {
                     />
                   </v-col>
 
-                  <!-- Job Title -->
-                  <v-col cols="12">
+                  <v-col cols="12" sm="6">
                     <v-select
                       v-model="form.job_title_id"
                       :items="options.job_titles || []"
-                      item-title="title"
+                      item-title="job_title"
                       item-value="id"
                       label="Job Title"
                       variant="outlined"
@@ -553,8 +479,7 @@ const submit = () => {
                     />
                   </v-col>
 
-                  <!-- Location -->
-                  <v-col cols="12">
+                  <v-col cols="12" sm="6">
                     <v-select
                       v-model="form.location_id"
                       :items="options.locations || []"
@@ -568,8 +493,7 @@ const submit = () => {
                     />
                   </v-col>
 
-                  <!-- Employment Status -->
-                  <v-col cols="12">
+                  <v-col cols="12" sm="6">
                     <v-select
                       v-model="form.employment_status_id"
                       :items="options.employment_statuses || []"
@@ -583,8 +507,7 @@ const submit = () => {
                     />
                   </v-col>
 
-                  <!-- Supervisor -->
-                  <v-col cols="12">
+                  <v-col cols="12" sm="6">
                     <v-select
                       v-model="form.supervisor_id"
                       :items="options.supervisors || []"
@@ -600,73 +523,496 @@ const submit = () => {
                 </v-row>
               </v-card-text>
             </v-card>
+          </v-window-item>
 
-            <!-- E-Signature Card -->
+          <!-- TAB 3: Education (Schema Aligned) -->
+          <v-window-item value="education">
             <v-card variant="outlined" class="rounded-lg mb-6">
               <v-card-title
-                class="text-subtitle-1 font-weight-bold py-3 px-5 border-b d-flex align-center ga-2"
+                class="text-subtitle-1 font-weight-bold py-3 px-5 border-b d-flex align-center justify-space-between"
               >
-                <v-icon icon="mdi-draw" color="primary" size="small" />
-                Digital E-Signature
+                <div class="d-flex align-center ga-2">
+                  <v-icon
+                    icon="mdi-school-outline"
+                    color="primary"
+                    size="small"
+                  />
+                  Educational Background
+                </div>
+                <v-btn
+                  size="small"
+                  color="primary"
+                  variant="tonal"
+                  prepend-icon="mdi-plus"
+                  @click="addEducation"
+                >
+                  Add Education
+                </v-btn>
               </v-card-title>
 
               <v-card-text class="pa-5">
-                <div class="mb-3">
-                  <div
-                    v-if="signaturePreview"
-                    class="border rounded-lg pa-2 text-center bg-surface-variant mb-2"
-                  >
-                    <v-img
-                      :src="signaturePreview"
-                      max-height="100"
-                      contain
-                      alt="Signature Preview"
+                <div
+                  v-for="(edu, index) in form.education"
+                  :key="index"
+                  class="mb-6 border rounded-lg pa-4 bg-surface-light"
+                >
+                  <div class="d-flex justify-space-between align-center mb-3">
+                    <span
+                      class="text-subtitle-2 font-weight-bold text-medium-emphasis"
+                    >
+                      Education Record #{{ index + 1 }}
+                    </span>
+                    <v-btn
+                      v-if="form.education.length > 1"
+                      icon="mdi-delete-outline"
+                      color="error"
+                      variant="text"
+                      density="compact"
+                      @click="removeEducation(index)"
                     />
                   </div>
 
-                  <v-file-input
-                    accept="image/*"
-                    label="Change Signature"
-                    variant="outlined"
-                    density="compact"
-                    prepend-icon=""
-                    prepend-inner-icon="mdi-paperclip"
-                    hide-details="auto"
-                    :error-messages="form.errors.e_signature"
-                    @update:model-value="handleSignatureChange"
-                  />
-                  <div class="text-caption text-medium-emphasis mt-1">
-                    Upload a transparent PNG signature file.
-                  </div>
+                  <v-row density="compact">
+                    <v-col cols="12" sm="6">
+                      <v-text-field
+                        v-model="edu.institute"
+                        label="Institute / School"
+                        variant="outlined"
+                        density="compact"
+                        :error-messages="
+                          form.errors[`education.${index}.institute`]
+                        "
+                      />
+                    </v-col>
+
+                    <v-col cols="12" sm="6">
+                      <v-text-field
+                        v-model="edu.level"
+                        label="Education Level"
+                        placeholder="e.g. Bachelor's, Master's, High School"
+                        variant="outlined"
+                        density="compact"
+                        :error-messages="
+                          form.errors[`education.${index}.level`]
+                        "
+                      />
+                    </v-col>
+
+                    <v-col cols="12" sm="6">
+                      <v-text-field
+                        v-model="edu.major_specialization"
+                        label="Major / Specialization"
+                        placeholder="e.g. Computer Science, Accounting"
+                        variant="outlined"
+                        density="compact"
+                        :error-messages="
+                          form.errors[`education.${index}.major_specialization`]
+                        "
+                      />
+                    </v-col>
+
+                    <v-col cols="12" sm="3">
+                      <v-text-field
+                        v-model="edu.year"
+                        label="Graduation Year"
+                        type="number"
+                        placeholder="e.g. 2022"
+                        variant="outlined"
+                        density="compact"
+                        :error-messages="form.errors[`education.${index}.year`]"
+                      />
+                    </v-col>
+
+                    <v-col cols="12" sm="3">
+                      <v-text-field
+                        v-model="edu.gpa_score"
+                        label="GPA / Grade Score"
+                        placeholder="e.g. 3.8 / 4.0"
+                        variant="outlined"
+                        density="compact"
+                        :error-messages="
+                          form.errors[`education.${index}.gpa_score`]
+                        "
+                      />
+                    </v-col>
+
+                    <v-col cols="12" sm="6">
+                      <v-text-field
+                        v-model="edu.start_date"
+                        type="date"
+                        label="Start Date"
+                        variant="outlined"
+                        density="compact"
+                        :error-messages="
+                          form.errors[`education.${index}.start_date`]
+                        "
+                      />
+                    </v-col>
+
+                    <v-col cols="12" sm="6">
+                      <v-text-field
+                        v-model="edu.end_date"
+                        type="date"
+                        label="End Date"
+                        variant="outlined"
+                        density="compact"
+                        :error-messages="
+                          form.errors[`education.${index}.end_date`]
+                        "
+                      />
+                    </v-col>
+                  </v-row>
                 </div>
               </v-card-text>
             </v-card>
+          </v-window-item>
 
-            <!-- Bottom Actions -->
-            <div class="d-flex align-center ga-2 justify-end">
-              <v-btn
-                variant="outlined"
-                color="medium-emphasis"
-                elevation="0"
-                size="small"
-                :to="route('people.employee.index')"
+          <!-- TAB 4: Work Experience -->
+          <v-window-item value="experience">
+            <v-card variant="outlined" class="rounded-lg mb-6">
+              <v-card-title
+                class="text-subtitle-1 font-weight-bold py-3 px-5 border-b d-flex align-center justify-space-between"
               >
-                Cancel
-              </v-btn>
-              <v-btn
-                color="primary"
-                prepend-icon="mdi-content-save-outline"
-                elevation="0"
-                size="small"
-                :loading="form.processing"
-                @click="submit"
-              >
-                Update Employee
-              </v-btn>
-            </div>
-          </v-col>
-        </v-row>
+                <div class="d-flex align-center ga-2">
+                  <v-icon icon="mdi-history" color="primary" size="small" />
+                  Previous Work Experience
+                </div>
+                <v-btn
+                  size="small"
+                  color="primary"
+                  variant="tonal"
+                  prepend-icon="mdi-plus"
+                  @click="addWorkExperience"
+                >
+                  Add Experience
+                </v-btn>
+              </v-card-title>
+
+              <v-card-text class="pa-5">
+                <div
+                  v-for="(exp, index) in form.work_experience"
+                  :key="index"
+                  class="mb-6 border rounded-lg pa-4 bg-surface-light"
+                >
+                  <div class="d-flex justify-space-between align-center mb-3">
+                    <span
+                      class="text-subtitle-2 font-weight-bold text-medium-emphasis"
+                    >
+                      Experience Record #{{ index + 1 }}
+                    </span>
+                    <v-btn
+                      v-if="form.work_experience.length > 1"
+                      icon="mdi-delete-outline"
+                      color="error"
+                      variant="text"
+                      density="compact"
+                      @click="removeWorkExperience(index)"
+                    />
+                  </div>
+
+                  <v-row density="compact">
+                    <v-col cols="12" sm="6">
+                      <v-text-field
+                        v-model="exp.company"
+                        label="Company Name"
+                        variant="outlined"
+                        density="compact"
+                        :error-messages="
+                          form.errors[`work_experience.${index}.company`]
+                        "
+                      />
+                    </v-col>
+
+                    <v-col cols="12" sm="6">
+                      <v-text-field
+                        v-model="exp.job_title"
+                        label="Job Title / Position"
+                        variant="outlined"
+                        density="compact"
+                        :error-messages="
+                          form.errors[`work_experience.${index}.job_title`]
+                        "
+                      />
+                    </v-col>
+
+                    <v-col cols="12" sm="6">
+                      <v-text-field
+                        v-model="exp.from"
+                        type="date"
+                        label="Start Date"
+                        variant="outlined"
+                        density="compact"
+                        :error-messages="
+                          form.errors[`work_experience.${index}.start_date`]
+                        "
+                      />
+                    </v-col>
+
+                    <v-col cols="12" sm="6">
+                      <v-text-field
+                        v-model="exp.to"
+                        type="date"
+                        label="End Date"
+                        variant="outlined"
+                        density="compact"
+                        :error-messages="
+                          form.errors[`work_experience.${index}.end_date`]
+                        "
+                      />
+                    </v-col>
+
+                    <v-col cols="12">
+                      <v-textarea
+                        v-model="exp.description"
+                        label="Roles & Responsibilities"
+                        rows="2"
+                        variant="outlined"
+                        density="compact"
+                        :error-messages="
+                          form.errors[`work_experience.${index}.description`]
+                        "
+                      />
+                    </v-col>
+                  </v-row>
+                </div>
+              </v-card-text>
+            </v-card>
+          </v-window-item>
+        </v-window>
+
+        <!-- Form Actions Footer -->
+        <div class="d-flex align-center ga-2 justify-end mt-4">
+          <v-btn
+            variant="outlined"
+            color="medium-emphasis"
+            elevation="0"
+            size="small"
+            :to="route('people.employee.index')"
+          >
+            Cancel
+          </v-btn>
+          <v-btn
+            color="primary"
+            prepend-icon="mdi-content-save-outline"
+            elevation="0"
+            size="small"
+            :loading="form.processing"
+            @click="submit"
+          >
+            Update Employee
+          </v-btn>
+        </div>
       </form>
     </v-container>
   </SidebarLayout>
 </template>
+
+<script>
+import { Head, Link, useForm } from "@inertiajs/vue3";
+import SidebarLayout from "@/Layouts/SidebarLayout.vue";
+
+export default {
+  name: "EmployeeEdit",
+
+  components: {
+    SidebarLayout,
+    Head,
+    Link,
+  },
+
+  props: {
+    employee: {
+      type: Object,
+      required: true,
+    },
+    options: {
+      type: Object,
+      default: () => ({}),
+    },
+  },
+
+  data() {
+    return {
+      activeTab: "personal",
+      photoPreview:
+        this.employee.photo_url ||
+        (this.employee.photo ? `/storage/${this.employee.photo}` : null),
+      signaturePreview:
+        this.employee.signature_url ||
+        (this.employee.e_signature_path
+          ? `/storage/${this.employee.e_signature_path}`
+          : null),
+
+      form: useForm({
+        _method: "put",
+        employee_number: this.employee.employee_number || "",
+        emp_first_name: this.employee.emp_first_name || "",
+        emp_last_name: this.employee.emp_last_name || "",
+        emp_middle_name: this.employee.emp_middle_name || "",
+        emp_suffix: this.employee.emp_suffix || "",
+        emp_birthday: this.employee.emp_birthday || null,
+        emp_sex: this.employee.emp_sex || "male",
+        emp_marital_status: this.employee.emp_marital_status || null,
+        emp_nationality_id: this.employee.emp_nationality_id || null,
+        photo: null,
+        e_signature: null,
+
+        // Contact & Address
+        street1: this.employee.street1 || "",
+        street2: this.employee.street2 || "",
+        city: this.employee.city || "",
+        province: this.employee.province || "",
+        zip_code: this.employee.zip_code || "",
+        country_id: this.employee.country_id || "",
+        home_telephone_no: this.employee.home_telephone_no || "",
+        mobile_no: this.employee.mobile_no || "",
+        work_no: this.employee.work_no || "",
+        work_email: this.employee.work_email || "",
+        other_email: this.employee.other_email || "",
+
+        // Employment Details
+        joined_date: this.employee.joined_date || null,
+        job_title_id: this.employee.job_title_id || null,
+        department_id: this.employee.department_id || null,
+        location_id: this.employee.location_id || null,
+        employment_status_id: this.employee.employment_status_id || null,
+        supervisor_id: this.employee.supervisor_id || null,
+        status: this.employee.status || "active",
+
+        // Education (Aligned with 'educations' schema)
+        education:
+          this.employee.education && this.employee.education.length
+            ? JSON.parse(JSON.stringify(this.employee.education))
+            : [
+                {
+                  level: "",
+                  institute: "",
+                  major_specialization: "",
+                  year: null,
+                  gpa_score: "",
+                  start_date: null,
+                  end_date: null,
+                },
+              ],
+
+        // Work Experience
+        work_experience:
+          this.employee.work_experience && this.employee.work_experience.length
+            ? JSON.parse(JSON.stringify(this.employee.work_experience))
+            : [
+                {
+                  company: "",
+                  job_title: "",
+                  from: null,
+                  to: null,
+                  description: "",
+                },
+              ],
+      }),
+
+      sexOptions: [
+        { title: "Male", value: "male" },
+        { title: "Female", value: "female" },
+        { title: "Other", value: "other" },
+      ],
+
+      maritalStatusOptions: [
+        { title: "Single", value: "single" },
+        { title: "Married", value: "married" },
+        { title: "Widowed", value: "widowed" },
+        { title: "Divorced", value: "divorced" },
+        { title: "Separated", value: "separated" },
+      ],
+
+      statusOptions: [
+        { title: "Active", value: "active" },
+        { title: "On Leave", value: "on_leave" },
+        { title: "Terminated", value: "terminated" },
+        { title: "Archived", value: "archived" },
+      ],
+    };
+  },
+
+  methods: {
+    addEducation() {
+      this.form.education.push({
+        level: "",
+        institute: "",
+        major_specialization: "",
+        year: null,
+        gpa_score: "",
+        start_date: null,
+        end_date: null,
+      });
+      this.showToast("Added new education row", "info");
+    },
+
+    removeEducation(index) {
+      this.form.education.splice(index, 1);
+      this.showToast("Removed education row", "info");
+    },
+
+    addWorkExperience() {
+      this.form.work_experience.push({
+        company: "",
+        job_title: "",
+        from: null,
+        to: null,
+        description: "",
+      });
+      this.showToast("Added new experience row", "info");
+    },
+
+    removeWorkExperience(index) {
+      this.form.work_experience.splice(index, 1);
+      this.showToast("Removed experience row", "info");
+    },
+
+    handlePhotoChange(file) {
+      if (file) {
+        const rawFile = Array.isArray(file) ? file[0] : file;
+        this.form.photo = rawFile;
+        this.photoPreview = URL.createObjectURL(rawFile);
+        this.showToast("Profile photo preview updated", "info");
+      } else {
+        this.form.photo = null;
+        this.photoPreview =
+          this.employee.photo_url ||
+          (this.employee.photo ? `/storage/${this.employee.photo}` : null);
+      }
+    },
+
+    handleSignatureChange(file) {
+      if (file) {
+        const rawFile = Array.isArray(file) ? file[0] : file;
+        this.form.e_signature = rawFile;
+        this.signaturePreview = URL.createObjectURL(rawFile);
+        this.showToast("Digital signature preview updated", "info");
+      } else {
+        this.form.e_signature = null;
+        this.signaturePreview =
+          this.employee.signature_url ||
+          (this.employee.e_signature_path
+            ? `/storage/${this.employee.e_signature_path}`
+            : null);
+      }
+    },
+
+    submit() {
+      this.form.post(route("people.employee.update", this.employee.id), {
+        preserveScroll: true,
+        onSuccess: () => {
+          this.showToast("Employee details updated successfully!", "success");
+        },
+        onError: (errors) => {
+          const errorCount = Object.keys(errors).length;
+          this.showToast(
+            `Failed to update employee. Please check ${errorCount} required field(s).`,
+            "error"
+          );
+        },
+      });
+    },
+  },
+};
+</script>

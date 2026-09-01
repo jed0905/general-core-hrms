@@ -15,7 +15,8 @@ class EmployeeController extends Controller
 {
     public function __construct(
         protected EmployeeService $employeeService
-    ) {}
+    ) {
+    }
 
     /**
      * Display a listing of employees.
@@ -26,8 +27,8 @@ class EmployeeController extends Controller
 
         return Inertia::render('app/People/Employees/Index', [
             'employees' => $this->employeeService->getPaginatedEmployees($filters),
-            'filters'   => $filters,
-            'options'   => $this->employeeService->getFormDropdownOptions(),
+            'filters' => $filters,
+            'options' => $this->employeeService->getFormDropdownOptions(),
         ]);
     }
 
@@ -47,35 +48,53 @@ class EmployeeController extends Controller
     public function store(Request $request): RedirectResponse
     {
         $validated = $request->validate([
-            'employee_number'      => ['required', 'string', 'max:255', 'unique:employees,employee_number'],
-            'emp_first_name'       => ['required', 'string', 'max:255'],
-            'emp_last_name'        => ['required', 'string', 'max:255'],
-            'emp_middle_name'      => ['nullable', 'string', 'max:255'],
-            'emp_suffix'           => ['nullable', 'string', 'max:50'],
-            'emp_birthday'         => ['nullable', 'date'],
-            'emp_sex'              => ['required', 'string', Rule::in(['male', 'female', 'other'])],
-            'emp_marital_status'   => ['nullable', 'string'],
-            'emp_nationality_id'   => ['nullable', 'exists:nationalities,id'],
-            'photo'                => ['nullable', 'image', 'max:2048'],
-            'e_signature'          => ['nullable', 'image', 'max:2048'],
-            'street1'              => ['nullable', 'string', 'max:255'],
-            'street2'              => ['nullable', 'string', 'max:255'],
-            'city'                 => ['nullable', 'string', 'max:255'],
-            'province'             => ['nullable', 'string', 'max:255'],
-            'zip_code'             => ['nullable', 'string', 'max:20'],
-            'country_id'           => ['nullable', 'string', 'max:255'],
-            'home_telephone_no'    => ['nullable', 'string', 'max:50'],
-            'mobile_no'            => ['nullable', 'string', 'max:50'],
-            'work_no'              => ['nullable', 'string', 'max:50'],
-            'work_email'           => ['nullable', 'email', 'max:255', 'unique:employees,work_email'],
-            'other_email'          => ['nullable', 'email', 'max:255'],
-            'joined_date'          => ['nullable', 'date'],
-            'job_title_id'         => ['nullable', 'exists:job_titles,id'],
-            'department_id'        => ['nullable', 'exists:departments,id'],
-            'location_id'          => ['nullable', 'exists:locations,id'],
+            'employee_number' => ['required', 'string', 'max:255', 'unique:employees,employee_number'],
+            'emp_first_name' => ['required', 'string', 'max:255'],
+            'emp_last_name' => ['required', 'string', 'max:255'],
+            'emp_middle_name' => ['nullable', 'string', 'max:255'],
+            'emp_suffix' => ['nullable', 'string', 'max:50'],
+            'emp_birthday' => ['nullable', 'date'],
+            'emp_sex' => ['required', 'string', Rule::in(['male', 'female', 'other'])],
+            'emp_marital_status' => ['nullable', 'string'],
+            'emp_nationality_id' => ['nullable', 'exists:nationalities,id'],
+            'photo' => ['nullable', 'image', 'max:2048'],
+            'e_signature' => ['nullable', 'image', 'max:2048'],
+            'street1' => ['nullable', 'string', 'max:255'],
+            'street2' => ['nullable', 'string', 'max:255'],
+            'city' => ['nullable', 'string', 'max:255'],
+            'province' => ['nullable', 'string', 'max:255'],
+            'zip_code' => ['nullable', 'string', 'max:20'],
+            'country_id' => ['nullable', 'string', 'max:255'],
+            'home_telephone_no' => ['nullable', 'string', 'max:50'],
+            'mobile_no' => ['nullable', 'string', 'max:50'],
+            'work_no' => ['nullable', 'string', 'max:50'],
+            'work_email' => ['nullable', 'email', 'max:255', 'unique:employees,work_email'],
+            'other_email' => ['nullable', 'email', 'max:255'],
+            'joined_date' => ['nullable', 'date'],
+            'job_title_id' => ['nullable', 'exists:job_titles,id'],
+            'department_id' => ['nullable', 'exists:departments,id'],
+            'location_id' => ['nullable', 'exists:locations,id'],
             'employment_status_id' => ['nullable', 'exists:employment_statuses,id'],
-            'supervisor_id'        => ['nullable', 'exists:employees,id'],
-            'status'               => ['required', Rule::in(['active', 'archived', 'on_leave', 'terminated'])],
+            'supervisor_id' => ['nullable', 'exists:employees,id'],
+            'status' => ['required', Rule::in(['active', 'archived', 'on_leave', 'terminated'])],
+
+            // Education records (matches educations table)
+            'education' => ['nullable', 'array'],
+            'education.*.level' => ['nullable', 'string', 'max:255'],
+            'education.*.institute' => ['nullable', 'string', 'max:255'],
+            'education.*.major_specialization' => ['nullable', 'string', 'max:255'],
+            'education.*.year' => ['nullable', 'integer'],
+            'education.*.gpa_score' => ['nullable', 'string', 'max:255'],
+            'education.*.start_date' => ['nullable', 'date'],
+            'education.*.end_date' => ['nullable', 'date'],
+
+            // Work Experience records
+            'work_experience' => ['nullable', 'array'],
+            'work_experience.*.company' => ['nullable', 'string', 'max:255'],
+            'work_experience.*.job_title' => ['nullable', 'string', 'max:255'],
+            'work_experience.*.start_date' => ['nullable', 'date'],
+            'work_experience.*.end_date' => ['nullable', 'date'],
+            'work_experience.*.description' => ['nullable', 'string'],
         ]);
 
         $employee = $this->employeeService->createEmployee($validated);
@@ -96,6 +115,8 @@ class EmployeeController extends Controller
             'employmentStatus',
             'nationality',
             'supervisor',
+            'education',
+            'workExperience',
         ]);
 
         return Inertia::render('app/People/Employees/Show', [
@@ -108,9 +129,14 @@ class EmployeeController extends Controller
      */
     public function edit(Employee $employee): Response
     {
+        $employee->load([
+            'education',
+            'workExperience',
+        ]);
+
         return Inertia::render('app/People/Employees/Edit', [
             'employee' => $employee,
-            'options'  => $this->employeeService->getFormDropdownOptions(),
+            'options' => $this->employeeService->getFormDropdownOptions(),
         ]);
     }
 
@@ -120,35 +146,53 @@ class EmployeeController extends Controller
     public function update(Request $request, Employee $employee): RedirectResponse
     {
         $validated = $request->validate([
-            'employee_number'      => ['required', 'string', 'max:255', Rule::unique('employees')->ignore($employee->id)],
-            'emp_first_name'       => ['required', 'string', 'max:255'],
-            'emp_last_name'        => ['required', 'string', 'max:255'],
-            'emp_middle_name'      => ['nullable', 'string', 'max:255'],
-            'emp_suffix'           => ['nullable', 'string', 'max:50'],
-            'emp_birthday'         => ['nullable', 'date'],
-            'emp_sex'              => ['required', 'string', Rule::in(['male', 'female', 'other'])],
-            'emp_marital_status'   => ['nullable', 'string'],
-            'emp_nationality_id'   => ['nullable', 'exists:nationalities,id'],
-            'photo'                => ['nullable', 'image', 'max:2048'],
-            'e_signature'          => ['nullable', 'image', 'max:2048'],
-            'street1'              => ['nullable', 'string', 'max:255'],
-            'street2'              => ['nullable', 'string', 'max:255'],
-            'city'                 => ['nullable', 'string', 'max:255'],
-            'province'             => ['nullable', 'string', 'max:255'],
-            'zip_code'             => ['nullable', 'string', 'max:20'],
-            'country_id'           => ['nullable', 'string', 'max:255'],
-            'home_telephone_no'    => ['nullable', 'string', 'max:50'],
-            'mobile_no'            => ['nullable', 'string', 'max:50'],
-            'work_no'              => ['nullable', 'string', 'max:50'],
-            'work_email'           => ['nullable', 'email', 'max:255', Rule::unique('employees')->ignore($employee->id)],
-            'other_email'          => ['nullable', 'email', 'max:255'],
-            'joined_date'          => ['nullable', 'date'],
-            'job_title_id'         => ['nullable', 'exists:job_titles,id'],
-            'department_id'        => ['nullable', 'exists:departments,id'],
-            'location_id'          => ['nullable', 'exists:locations,id'],
+            'employee_number' => ['required', 'string', 'max:255', Rule::unique('employees')->ignore($employee->id)],
+            'emp_first_name' => ['required', 'string', 'max:255'],
+            'emp_last_name' => ['required', 'string', 'max:255'],
+            'emp_middle_name' => ['nullable', 'string', 'max:255'],
+            'emp_suffix' => ['nullable', 'string', 'max:50'],
+            'emp_birthday' => ['nullable', 'date'],
+            'emp_sex' => ['required', 'string', Rule::in(['male', 'female', 'other'])],
+            'emp_marital_status' => ['nullable', 'string'],
+            'emp_nationality_id' => ['nullable', 'exists:nationalities,id'],
+            'photo' => ['nullable', 'image', 'max:2048'],
+            'e_signature' => ['nullable', 'image', 'max:2048'],
+            'street1' => ['nullable', 'string', 'max:255'],
+            'street2' => ['nullable', 'string', 'max:255'],
+            'city' => ['nullable', 'string', 'max:255'],
+            'province' => ['nullable', 'string', 'max:255'],
+            'zip_code' => ['nullable', 'string', 'max:20'],
+            'country_id' => ['nullable', 'string', 'max:255'],
+            'home_telephone_no' => ['nullable', 'string', 'max:50'],
+            'mobile_no' => ['nullable', 'string', 'max:50'],
+            'work_no' => ['nullable', 'string', 'max:50'],
+            'work_email' => ['nullable', 'email', 'max:255', Rule::unique('employees')->ignore($employee->id)],
+            'other_email' => ['nullable', 'email', 'max:255'],
+            'joined_date' => ['nullable', 'date'],
+            'job_title_id' => ['nullable', 'exists:job_titles,id'],
+            'department_id' => ['nullable', 'exists:departments,id'],
+            'location_id' => ['nullable', 'exists:locations,id'],
             'employment_status_id' => ['nullable', 'exists:employment_statuses,id'],
-            'supervisor_id'        => ['nullable', 'exists:employees,id'],
-            'status'               => ['required', Rule::in(['active', 'archived', 'on_leave', 'terminated'])],
+            'supervisor_id' => ['nullable', 'exists:employees,id'],
+            'status' => ['required', Rule::in(['active', 'archived', 'on_leave', 'terminated'])],
+
+            // Education records (matches educations table)
+            'education' => ['nullable', 'array'],
+            'education.*.level' => ['nullable', 'string', 'max:255'],
+            'education.*.institute' => ['nullable', 'string', 'max:255'],
+            'education.*.major_specialization' => ['nullable', 'string', 'max:255'],
+            'education.*.year' => ['nullable', 'integer'],
+            'education.*.gpa_score' => ['nullable', 'string', 'max:255'],
+            'education.*.start_date' => ['nullable', 'date'],
+            'education.*.end_date' => ['nullable', 'date'],
+
+            // Work Experience records
+            'work_experience' => ['nullable', 'array'],
+            'work_experience.*.company' => ['nullable', 'string', 'max:255'],
+            'work_experience.*.job_title' => ['nullable', 'string', 'max:255'],
+            'work_experience.*.from' => ['nullable', 'date'],
+            'work_experience.*.to' => ['nullable', 'date'],
+            'work_experience.*.description' => ['nullable', 'string'],
         ]);
 
         $this->employeeService->updateEmployee($employee, $validated);
@@ -181,7 +225,6 @@ class EmployeeController extends Controller
      */
     public function export()
     {
-        // Place export logic here (e.g. Laravel Excel download)
         return back()->with('info', 'Employee export initiated.');
     }
 
@@ -194,7 +237,6 @@ class EmployeeController extends Controller
             'file' => ['required', 'file', 'mimes:csv,xlsx'],
         ]);
 
-        // Place import logic here
         return back()->with('success', 'Employees imported successfully.');
     }
 }

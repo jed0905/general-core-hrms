@@ -82,10 +82,23 @@
               </div>
 
               <v-row>
-                <v-col cols="12">
+                <v-col cols="12" md="6">
                   <v-text-field
                     v-model="general.name"
                     label="Organization Name"
+                    placeholder="e.g. Acme Corporation"
+                    prepend-inner-icon="mdi-office-building-outline"
+                    variant="outlined"
+                    density="comfortable"
+                    rounded="lg"
+                    required
+                  />
+                </v-col>
+
+                <v-col cols="12" md="6">
+                  <v-text-field
+                    v-model="general.shortcut"
+                    label="Organization Shortcut / Abbreviation"
                     placeholder="e.g. Acme Corporation"
                     prepend-inner-icon="mdi-office-building-outline"
                     variant="outlined"
@@ -869,6 +882,7 @@ export default {
 
       general: {
         name: "",
+        shortcut: "",
         phone: "",
         email: "",
         country: "",

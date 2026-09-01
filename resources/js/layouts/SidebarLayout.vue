@@ -13,7 +13,7 @@
         />
         <div class="d-flex flex-column text-white">
           <span class="text-subtitle-2 font-weight-bold leading-tight">
-            {{ $page.props.company_shortcut }}
+            {{ $page.props.company?.shortcut || $page.props.company?.name }}
           </span>
           <span class="text-caption text-truncate leading-tight max-w-200">
             {{ $page.props.app_name }}
@@ -461,13 +461,6 @@ export default {
               routePrefix: "people.employee",
             },
             {
-              title: "Departments",
-              icon: "mdi-domain",
-              route: "administration.organization.department.index",
-              permission: "department.view",
-              routePrefix: "administration.organization.department",
-            },
-            {
               title: "Job Titles",
               icon: "mdi-briefcase-outline",
               route: "people.job-title.index",
@@ -477,7 +470,7 @@ export default {
             {
               title: "Employment Status",
               icon: "mdi-account-details",
-              route: "hrmanagement.jobstructure.jobstatus.index",
+              route: "people.employment-status.index",
               permission: "employee.employment.view",
               routePrefix: "hrmanagement.jobstructure.jobstatus",
             },
@@ -504,9 +497,16 @@ export default {
             {
               title: "Work Shifts",
               icon: "mdi-timetable",
-              route: "hrmanagement.time.work-shifts.index",
+              route: "time.shifts.index",
               permission: "shift.view",
-              routePrefix: "time.work-shifts",
+              routePrefix: "time.shifts",
+            },
+            {
+              title: "Work Schedules",
+              icon: "mdi-calendar-clock",
+              route: "time.work-schedules.index",
+              permission: "work_schedule.view",
+              routePrefix: "time.schedules",
             },
             {
               title: "Employee Schedules",

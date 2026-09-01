@@ -13,6 +13,7 @@ return new class extends Migration {
         Schema::create('organization_general_information', function (Blueprint $table) {
             $table->id();
             $table->string('name');
+            $table->string('shortcut')->nullable();
             $table->string('phone')->nullable();
             $table->string('email')->nullable();
             $table->string('country');

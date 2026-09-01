@@ -17,7 +17,7 @@ return new class extends Migration {
             $table->string('job_title');
             $table->date('from');
             $table->date('to');
-            $table->string('notes');
+            $table->string('notes')->nullable();
             $table->timestamps();
         });
     }

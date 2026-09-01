@@ -13,14 +13,19 @@ class Shift extends Model
         'name',
         'code',
         'description',
+        'start_time',
+        'end_time',
+        'break_start',
+        'break_end',
+        'required_hours',
         'is_overnight',
         'is_flexible',
-        'required_hours',
-        'is_active'
+        'is_active',
     ];
 
-    public function shiftSchedule()
-    {
-        return $this->hasMany(ShiftSchedule::class);
-    }
+    protected $casts = [
+        'is_overnight' => 'boolean',
+        'is_flexible' => 'boolean',
+        'is_active' => 'boolean',
+    ];
 }

@@ -33,6 +33,7 @@ class OrganizationGeneralController extends Controller
     {
         $validated = $request->validate([
             'name'     => ['nullable', 'string', 'max:255'],
+            'shortcut' => ['nullable', 'string', 'max:50'],
             'phone'    => ['nullable', 'string', 'max:50'],
             'email'    => ['nullable', 'email', 'max:255'],
             'country'  => ['nullable', 'string', 'max:100'],

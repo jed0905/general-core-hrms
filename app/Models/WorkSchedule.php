@@ -12,4 +12,9 @@ class WorkSchedule extends Model
         'description',
         'status'
     ];
+
+    public function days()
+    {
+        return $this->hasMany(WorkScheduleDay::class);
+    }
 }

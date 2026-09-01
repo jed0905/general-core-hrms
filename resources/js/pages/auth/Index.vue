@@ -26,17 +26,21 @@
       <section class="brand-section">
         <div class="brand-content">
           <!-- Logo -->
+          <!-- Logo -->
           <div class="company-logo-container">
             <v-img
-              v-if="companyLogo"
-              :src="companyLogo"
-              :alt="`${companyName} logo`"
+              v-if="$page.props.branding?.client_logo"
+              :src="$page.props.branding.client_logo"
+              :alt="`${companyName || 'Company'} logo`"
               contain
               class="company-logo"
             />
 
             <div v-else class="logo-placeholder">
-              <v-icon size="42" :color="primaryColor">
+              <v-icon
+                size="42"
+                :color="$page.props.branding?.primary_color || 'primary'"
+              >
                 mdi-office-building-outline
               </v-icon>
             </div>
@@ -575,35 +579,35 @@ export default {
 
   computed: {
     companyName() {
-      return this.branding.company_name || "Your Company";
+      return this.$page.props.company?.name || "Your Company";
     },
 
     systemName() {
-      return this.branding.system_name || "Human Resource Management System";
+      return this.branding?.system_name || "Human Resource Management System";
     },
 
     tagline() {
-      return this.branding.tagline || "";
+      return this.branding?.tagline || "";
     },
 
     companyLogo() {
-      return this.branding.logo || null;
+      return this.branding?.logo || null;
     },
 
     primaryColor() {
-      return this.branding.primary_color || "#2563EB";
+      return this.branding?.primary_color || "#2563EB";
     },
 
     secondaryColor() {
-      return this.branding.secondary_color || "#EFF6FF";
+      return this.branding?.secondary_color || "#EFF6FF";
     },
 
     showGoogleLogin() {
-      return this.branding.show_google_login !== false;
+      return this.branding?.show_google_login !== false;
     },
 
     showRegistration() {
-      return this.branding.show_registration !== false;
+      return this.branding?.show_registration !== false;
     },
 
     currentYear() {
@@ -922,21 +926,17 @@ export default {
 
   height: 92px;
 
-  background: white;
-
-  border-radius: 22px;
-
-  padding: 14px;
-
   display: flex;
 
   align-items: center;
 
   justify-content: center;
 
-  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.06);
-
   margin-bottom: 34px;
+
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
 }
 
 .company-logo {

@@ -103,11 +103,11 @@
                 <td class="py-3">
                   <div v-if="user.employee" class="d-flex flex-column">
                     <span class="text-body-2 font-weight-medium">
-                      {{ user.employee.first_name }}
-                      {{ user.employee.last_name }}
+                      {{ user.employee.emp_first_name }}
+                      {{ user.employee.emp_last_name }}
                     </span>
                     <span class="text-caption text-medium-emphasis">{{
-                      user.employee.email || "No email"
+                      user.employee.work_email || "No email"
                     }}</span>
                   </div>
                   <v-chip v-else size="x-small" variant="tonal" color="grey"

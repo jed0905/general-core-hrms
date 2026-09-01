@@ -9,4 +9,6 @@ class PayGrade extends Model
     protected $fillable = [
         'name'
     ];
+
+
 }

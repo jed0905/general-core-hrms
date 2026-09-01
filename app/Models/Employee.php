@@ -2,8 +2,6 @@
 
 namespace App\Models;
 
-use App\Models\OtherInfoSpecialSkills;
-use App\Models\PersonalInformation;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -22,7 +20,7 @@ class Employee extends Model
         'emp_middle_name',
         'emp_suffix',
         'emp_birthday',
-        
+
         'emp_nationality_id',
         'emp_sex',
         'emp_marital_status',
@@ -80,4 +78,21 @@ class Employee extends Model
     {
         return $this->hasOne(Employee::class, 'supervisor_id', 'id');
     }
+
+    public function nationality()
+    {
+        return $this->belongsTo(Nationality::class, 'emp_nationality_id', 'id');
+    }
+
+    public function education()
+    {
+        return $this->hasMany(Education::class);
+    }
+
+    public function workExperience()
+    {
+        return $this->hasMany(WorkExperience::class);
+    }
+
+
 }

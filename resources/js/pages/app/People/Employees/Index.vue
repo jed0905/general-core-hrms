@@ -306,7 +306,7 @@ const submitArchiveToggle = () => {
                   <div
                     class="text-body-2 text-high-emphasis font-weight-medium"
                   >
-                    {{ emp.job_title?.title || "—" }}
+                    {{ emp.job_title?.job_title || "—" }}
                   </div>
                   <div class="text-caption text-medium-emphasis">
                     {{ emp.department?.name || "Unassigned" }}

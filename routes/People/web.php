@@ -8,6 +8,7 @@ use App\Http\Controllers\Web\People\EmployeeEducationController;
 use App\Http\Controllers\Web\People\EmployeeEmploymentController;
 use App\Http\Controllers\Web\People\EmployeeExperienceController;
 use App\Http\Controllers\Web\People\EmployeePersonalController;
+use App\Http\Controllers\Web\People\EmploymentStatusController;
 use App\Http\Controllers\Web\People\JobTitleController;
 use Illuminate\Support\Facades\Route;
 
@@ -134,5 +135,31 @@ Route::middleware(['auth', 'verified'])
         // Archive Job Title
         Route::patch('/{jobTitle}/archive', [JobTitleController::class, 'archive'])
             ->middleware('can:job_title.archive')
+            ->name('archive');
+    });
+
+Route::middleware(['auth', 'verified'])
+    ->prefix('people/employment-statuses')
+    ->name('people.employment-status.')
+    ->group(function () {
+
+        // View Employment Statuses
+        Route::get('/', [EmploymentStatusController::class, 'index'])
+            ->middleware('can:employment_status.view')
+            ->name('index');
+
+        // Create Employment Status
+        Route::post('/', [EmploymentStatusController::class, 'store'])
+            ->middleware('can:employment_status.create')
+            ->name('store');
+
+        // Update Employment Status
+        Route::put('/{employmentStatus}', [EmploymentStatusController::class, 'update'])
+            ->middleware('can:employment_status.update')
+            ->name('update');
+
+        // Archive Employment Status
+        Route::patch('/{employmentStatus}/archive', [EmploymentStatusController::class, 'archive'])
+            ->middleware('can:employment_status.archive')
             ->name('archive');
     });

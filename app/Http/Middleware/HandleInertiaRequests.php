@@ -3,7 +3,9 @@
 namespace App\Http\Middleware;
 
 use App\Helpers\UserInformationHelper;
+use App\Http\Controllers\Web\Administration\Organization\OrganizationGeneralController;
 use App\Models\CorporateBranding;
+use App\Models\OrganizationGeneralInformation;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Middleware;
@@ -54,8 +56,6 @@ class HandleInertiaRequests extends Middleware
 
         return array_merge(parent::share($request), [
             'csrf_token' => $request->session()->token(),
-            'company_name' => config('app.company_name'),
-            'company_shortcut' => config('app.company_shortcut'),
             'app_name' => config('app.name'),
             'app_fullname' => config('app.fullname'),
 
@@ -91,10 +91,18 @@ class HandleInertiaRequests extends Middleware
                 $branding = CorporateBranding::first();
                 return $branding ? [
                     'client_logo'     => $branding->client_logo ? Storage::url($branding->client_logo) : null,
-                    'primary_color'   => $branding->primary_color,
-                    'secondary_color' => $branding->secondary_color,
+                    'primary_color'   => $branding->primary_color ?? '#1867C0',
+                    'secondary_color' => $branding->secondary_color ?? '#F5F5F5',
                 ] : null;
             },
+            'company' => function () {
+                $company = OrganizationGeneralInformation::first();
+                return $company ? [
+                    'name' => $company->name,
+                    'shortcut' => $company->shortcut,
+                    'address' => $company->street1 . ', ' . $company->city . ', ' . $company->state . ', ' . $company->country,
+                ] : null;
+            }
 
 
         ]);

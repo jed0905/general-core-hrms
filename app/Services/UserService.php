@@ -16,7 +16,7 @@ class UserService
     public function getPaginatedUsers(array $filters = [], int $perPage = 10): LengthAwarePaginator
     {
         return User::query()
-            ->with(['employee:id,emp_first_name,emp_last_name,email', 'roles:id,name'])
+            ->with(['employee:id,emp_first_name,emp_last_name,work_email', 'roles:id,name'])
             ->when($filters['search'] ?? null, function ($query, $search) {
                 $query->where('username', 'like', "%{$search}%")
                     ->orWhereHas('employee', function ($q) use ($search) {

@@ -8,6 +8,7 @@ class OrganizationGeneralInformation extends Model
 {
     protected $fillable = [
         'name',
+        'shortcut',
         'phone',
         'email',
         'country',
