@@ -2,15 +2,19 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\AttendanceDevice;
 use App\Models\Department;
 use App\Models\Employee;
 use App\Models\LeaveApplication;
 use App\Models\LeaveType;
 use App\Models\Location;
 use App\Models\User;
-use App\Models\AttendanceDevice;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
+use Shaykhnazar\HikvisionIsapi\Services\DeviceService;
+use Shaykhnazar\HikvisionIsapi\Services\PersonService;
+use Shaykhnazar\HikvisionIsapi\DTOs\Person;
+use Shaykhnazar\HikvisionIsapi\Enums\UserType;
 
 class DashboardController extends Controller
 {
@@ -19,6 +23,16 @@ class DashboardController extends Controller
      */
     public function index()
     {
+        // TEST FOR HIKVISION
+        $deviceService = app(DeviceService::class);
+
+        if ($deviceService->isOnline()) {
+            $info = $deviceService->getInfo();
+            dd($info);
+            echo "Device Model: " . $info['DeviceInfo']['model'];
+        }
+
+        // END TEST FOR HIKVISION
         /*
         |--------------------------------------------------------------------------
         | KPI DATA

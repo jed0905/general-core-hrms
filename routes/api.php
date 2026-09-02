@@ -1,8 +1,13 @@
 <?php
 
+use App\Http\Controllers\HikvisionWebhookController;
 use App\Http\Controllers\Web\HrManagement\EmployeeController;
+use App\Services\HikvisionAttendanceService;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Str;
+use Shaykhnazar\HikvisionIsapi\Facades\HikvisionIsapi;
 
 /*
 |--------------------------------------------------------------------------
@@ -27,3 +32,14 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
 //         Route::get('/operating-units', [OrganizationController::class, 'getOperatingUnits']);
 //         Route::get('/departments', [OrganizationController::class, 'getDepartments']);
 //     });
+
+Route::get('/hikvision/sync-test', function (
+    HikvisionAttendanceService $service
+) {
+    $start = Carbon::parse('2026-09-02 20:00:00', 'Asia/Manila');
+    $end = Carbon::parse('2026-09-02 23:59:59', 'Asia/Manila');
+
+    return response()->json(
+        $service->sync($start, $end)
+    );
+});

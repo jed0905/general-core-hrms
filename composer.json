@@ -17,6 +17,7 @@
         "laravel/socialite": "^5.23",
         "laravel/tinker": "^2.8",
         "maatwebsite/excel": "^3.1",
+        "shaykhnazar/hikvision-isapi": "^1.6",
         "spatie/laravel-permission": "^6.18",
         "tightenco/ziggy": "^1.6"
     },
