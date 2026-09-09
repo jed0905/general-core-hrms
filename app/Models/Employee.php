@@ -94,5 +94,10 @@ class Employee extends Model
         return $this->hasMany(WorkExperience::class);
     }
 
+    public function workSchedule()
+    {
+        return $this->hasMany(EmployeeWorkSchedule::class);
+    }
+
 
 }

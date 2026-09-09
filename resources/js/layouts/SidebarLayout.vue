@@ -511,7 +511,7 @@ export default {
             {
               title: "Employee Schedules",
               icon: "mdi-calendar-clock",
-              route: "hrmanagement.time.schedules.index",
+              route: "time.employee-schedules.index",
               permission: "work_schedule.view",
               routePrefix: "time.schedules",
             },

@@ -14,4 +14,14 @@ class EmployeeWorkSchedule extends Model
         'is_primary',
         'remarks'
     ];
+
+    public function employee()
+    {
+        return $this->belongsTo(Employee::class, 'employee_id', 'id');
+    }
+
+    public function workSchedule()
+    {
+        return $this->belongsTo(WorkSchedule::class, 'work_schedule_id', 'id');
+    }
 }
