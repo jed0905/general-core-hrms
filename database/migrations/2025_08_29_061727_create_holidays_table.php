@@ -15,31 +15,23 @@ return new class extends Migration
             $table->id();
 
             $table->string('name');
+            $table->string('code')->nullable()->unique();
+            $table->string('type')->default('regular');
 
-            $table->string('code')
-                ->nullable()
-                ->unique();
+            // Add specific date
+            $table->date('date');
 
-            $table->string('type')
-                ->default('regular');
+            $table->boolean('is_paid')->default(true);
+            $table->boolean('is_working_day')->default(false);
+            $table->boolean('is_recurring')->default(false);
 
-            $table->boolean('is_paid')
-                ->default(true);
-
-            $table->boolean('is_working_day')
-                ->default(false);
-
-            $table->boolean('is_recurring')
-                ->default(false);
-
-            $table->text('description')
-                ->nullable();
-
-            $table->string('status')
-                ->default('active');
+            $table->text('description')->nullable();
+            $table->string('status')->default('active');
 
             $table->timestamps();
 
+            // Indexes
+            $table->index(['date', 'status']);
             $table->index(['type', 'status']);
         });
     }

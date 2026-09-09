@@ -474,26 +474,26 @@ export default {
               permission: "employee.employment.view",
               routePrefix: "hrmanagement.jobstructure.jobstatus",
             },
-            {
-              title: "Employee Movements",
-              icon: "mdi-account-switch",
-              route: "hrmanagement.employee.movement.index",
-              permission: "employee_movement.view",
-              routePrefix: "hrmanagement.employee.movement",
-            },
+            // {
+            //   title: "Employee Movements",
+            //   icon: "mdi-account-switch",
+            //   route: "hrmanagement.employee.movement.index",
+            //   permission: "employee_movement.view",
+            //   routePrefix: "hrmanagement.employee.movement",
+            // },
           ],
         },
 
         time: {
           title: "Time",
           items: [
-            {
-              title: "Attendance",
-              icon: "mdi-clock-outline",
-              route: "hrmanagement.time.index",
-              permission: "attendance.view",
-              routePrefix: "hrmanagement.dailytimerecord",
-            },
+            // {
+            //   title: "Attendance",
+            //   icon: "mdi-clock-outline",
+            //   route: "hrmanagement.time.index",
+            //   permission: "attendance.view",
+            //   routePrefix: "hrmanagement.dailytimerecord",
+            // },
             {
               title: "Work Shifts",
               icon: "mdi-timetable",
@@ -518,7 +518,7 @@ export default {
             {
               title: "Holidays",
               icon: "mdi-calendar-star",
-              route: "hrmanagement.holidays.index",
+              route: "time.holidays.index",
               permission: "holiday.view",
               routePrefix: "leaves.holidays",
             },
@@ -528,34 +528,34 @@ export default {
         leave: {
           title: "Leave",
           items: [
-            {
-              title: "Leave Applications",
-              icon: "mdi-calendar-text",
-              route: "hrmanagement.leaves.leaveList",
-              permission: "leave.view",
-              routePrefix: "hrmanagement.leave",
-            },
-            {
-              title: "Leave Types",
-              icon: "mdi-shape-outline",
-              route: "hrmanagement.leaves.leave-types.index",
-              permission: "leave_policy.view",
-              routePrefix: "leaves.leave-types",
-            },
-            {
-              title: "Leave Policies",
-              icon: "mdi-file-document-outline",
-              route: "hrmanagement.leaves.policies.index",
-              permission: "leave_policy.view",
-              routePrefix: "leaves.policies",
-            },
-            {
-              title: "Leave Balances",
-              icon: "mdi-scale-balance",
-              route: "hrmanagement.leaves.entitlements.index",
-              permission: "leave.balance.view",
-              routePrefix: "leaves.entitlements",
-            },
+            // {
+            //   title: "Leave Applications",
+            //   icon: "mdi-calendar-text",
+            //   route: "hrmanagement.leaves.leaveList",
+            //   permission: "leave.view",
+            //   routePrefix: "hrmanagement.leave",
+            // },
+            // {
+            //   title: "Leave Types",
+            //   icon: "mdi-shape-outline",
+            //   route: "hrmanagement.leaves.leave-types.index",
+            //   permission: "leave_policy.view",
+            //   routePrefix: "leaves.leave-types",
+            // },
+            // {
+            //   title: "Leave Policies",
+            //   icon: "mdi-file-document-outline",
+            //   route: "hrmanagement.leaves.policies.index",
+            //   permission: "leave_policy.view",
+            //   routePrefix: "leaves.policies",
+            // },
+            // {
+            //   title: "Leave Balances",
+            //   icon: "mdi-scale-balance",
+            //   route: "hrmanagement.leaves.entitlements.index",
+            //   permission: "leave.balance.view",
+            //   routePrefix: "leaves.entitlements",
+            // },
           ],
         },
 

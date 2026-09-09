@@ -1,8 +1,9 @@
 <?php
 
 use App\Http\Controllers\Web\Time\EmployeeWorkScheduleController;
-use App\Http\Controllers\Web\Time\WorkScheduleController;
+use App\Http\Controllers\Web\Time\HolidayController;
 use App\Http\Controllers\Web\Time\ShiftController;
+use App\Http\Controllers\Web\Time\WorkScheduleController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware(['auth', 'verified'])->prefix('time')->name('time.')->group(function () {
@@ -96,4 +97,21 @@ Route::middleware(['auth', 'verified'])->prefix('time')->name('time.')->group(fu
             ->middleware('can:employee_work_schedule.remove');
     });
 
+    Route::prefix('holidays')->name('holidays.')->group(function () {
+        Route::get('/', [HolidayController::class, 'index'])
+            ->name('index')
+            ->middleware('can:holiday.view');
+
+        Route::post('/', [HolidayController::class, 'store'])
+            ->name('store')
+            ->middleware('can:holiday.create');
+
+        Route::put('/{holiday}', [HolidayController::class, 'update'])
+            ->name('update')
+            ->middleware('can:holiday.update');
+
+        Route::delete('/{holiday}', [HolidayController::class, 'destroy'])
+            ->name('destroy')
+            ->middleware('can:holiday.delete');
+    });
 });
