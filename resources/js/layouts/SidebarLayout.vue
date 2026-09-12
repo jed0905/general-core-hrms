@@ -543,6 +543,13 @@ export default {
             //   routePrefix: "leaves.approvals",
             // },
             {
+              title: "Leave Balances",
+              icon: "mdi-scale-balance",
+              route: "leave.balances.index",
+              permission: "leave.balance.view",
+              routePrefix: "leave.balances",
+            },
+            {
               title: "Leave Types",
               icon: "mdi-shape-outline",
               route: "leave.config.types.index",
