@@ -26,4 +26,14 @@ class LeavePolicyRule extends Model
         'allows_hourly',
         'expires',
     ];
+
+    public function policy()
+    {
+        return $this->belongsTo(LeavePolicy::class, 'leave_policy_id', 'id');
+    }
+
+    public function leaveType()
+    {
+        return $this->belongsTo(LeaveType::class);
+    }
 }

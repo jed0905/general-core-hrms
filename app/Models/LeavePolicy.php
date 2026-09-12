@@ -16,4 +16,9 @@ class LeavePolicy extends Model
         'effective_to',
         'is_active',
     ];
+
+    public function rules()
+    {
+        return $this->hasMany(LeavePolicyRule::class);
+    }
 }

@@ -50,6 +50,10 @@ class RouteServiceProvider extends ServiceProvider
             Route::middleware(['auth', 'web'])
                 ->group(base_path('routes/Time/web.php'));
 
+            // Leave Routes
+            Route::middleware(['auth', 'web'])
+                ->group(base_path('routes/Leave/web.php'));
+
             // Self Service Routes
             Route::middleware(['auth', 'web'])
                 ->group(base_path('routes/SelfService/web.php'));

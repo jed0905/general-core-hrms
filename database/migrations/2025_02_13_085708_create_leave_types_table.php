@@ -16,11 +16,6 @@ return new class extends Migration {
             $table->string('code');
 
             $table->string('description')->nullable();
-            $table->boolean('is_paid');
-            $table->boolean('requires_attachment');
-            $table->boolean('allows_half_day');
-            $table->boolean('allows_hourly');
-            $table->boolean('allows_negative_balance');
 
             $table->boolean('is_active');
 

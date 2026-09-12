@@ -131,6 +131,12 @@ class RolesAndPermissionsSeeder extends Seeder
             'attendance.finalize',
 
             // Leave
+
+            'leave_type.view',
+            'leave_type.create',
+            'leave_type.update',
+            'leave_type.archive',
+            
             'leave.view',
             'leave.create',
             'leave.update',

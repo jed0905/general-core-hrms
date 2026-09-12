@@ -13,15 +13,13 @@ class LeaveType extends Model
         'name',
         'code',
         'description',
-        'is_paid',
-        'requires_attachment',
-        'allows_half_day',
-        'allows_hourly',
-        'allows_negative_balance'
+        'is_active',
     ];
 
-    public function leaveApplications()
+    protected function casts(): array
     {
-        return $this->hasMany(LeaveApplication::class);
+        return [
+            'is_active' => 'boolean',
+        ];
     }
 }
