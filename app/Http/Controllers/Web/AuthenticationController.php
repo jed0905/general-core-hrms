@@ -71,13 +71,15 @@ class AuthenticationController extends Controller
 
             $request->session()->regenerate();
 
-            if ($user->hasRole('employee')) {
-                return redirect()->route('self-service.dashboard.index');
-            } elseif ($user->hasRole('superadmin') || $user->hasRole('hr_director') || $user->hasRole('campus_hr')) {
-                return redirect()->route('dashboard.index');
-            } else {
-                return redirect()->route('self-service.my-dtr.index');
-            }
+            return redirect()->route('dashboard.index');
+
+            // if ($user->hasRole('employee')) {
+            //     return redirect()->route('self-service.dashboard.index');
+            // } elseif ($user->hasRole('superadmin') || $user->hasRole('hr_director') || $user->hasRole('campus_hr')) {
+            //     return redirect()->route('dashboard.index');
+            // } else {
+            //     return redirect()->route('self-service.my-dtr.index');
+            // }
         }
 
         // If authentication fails

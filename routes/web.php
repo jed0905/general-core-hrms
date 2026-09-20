@@ -60,7 +60,7 @@ Route::get('/', function () {
         $user = Auth::user();
 
         if ($user->hasRole('employee')) {
-            return redirect()->route('self-service.dashboard.index');
+            return redirect()->route('dashboard.index');
         } elseif ($user->hasRole('superadmin')) {
             return redirect()->route('administration.user.index');
         } else {

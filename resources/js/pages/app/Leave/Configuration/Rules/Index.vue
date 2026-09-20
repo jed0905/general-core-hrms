@@ -36,7 +36,7 @@
             </tr>
           </thead>
           <tbody>
-            <tr v-if="!rules.data.length">
+            <tr v-if="!rules.data || !rules.data.length">
               <td colspan="7" class="text-center py-6 text-medium-emphasis">
                 No policy rules found.
               </td>
@@ -51,7 +51,7 @@
                 </v-chip>
               </td>
               <td>{{ r.accrual_rate }} / {{ r.grant_frequency }}</td>
-              <td>{{ r.max_balance }} days</td>
+              <td>{{ r.maximum_balance }} days</td>
               <td>{{ r.carry_forward_limit }} days</td>
               <td class="text-end">
                 <v-btn
@@ -110,9 +110,16 @@
                 <v-select
                   v-model="form.accrual_method"
                   label="Accrual Method *"
-                  :items="['none', 'monthly', 'annual', 'fixed_grant']"
+                  :items="[
+                    'fixed',
+                    'monthly',
+                    'annually',
+                    'per_payroll',
+                    'none',
+                  ]"
                   variant="outlined"
                   density="compact"
+                  :error-messages="form.errors.accrual_method"
                 />
               </v-col>
               <v-col cols="6">
@@ -120,9 +127,10 @@
                   v-model="form.accrual_rate"
                   type="number"
                   step="0.01"
-                  label="Accrual Rate *"
+                  label="Accrual Rate"
                   variant="outlined"
                   density="compact"
+                  :error-messages="form.errors.accrual_rate"
                 />
               </v-col>
 
@@ -130,19 +138,27 @@
                 <v-select
                   v-model="form.grant_frequency"
                   label="Grant Frequency *"
-                  :items="['none', 'monthly', 'quarterly', 'annual']"
+                  :items="[
+                    'monthly',
+                    'quarterly',
+                    'annually',
+                    'per_payroll',
+                    'none',
+                  ]"
                   variant="outlined"
                   density="compact"
+                  :error-messages="form.errors.grant_frequency"
                 />
               </v-col>
               <v-col cols="6">
                 <v-text-field
-                  v-model="form.max_balance"
+                  v-model="form.maximum_balance"
                   type="number"
                   step="0.5"
-                  label="Max Balance *"
+                  label="Max Balance"
                   variant="outlined"
                   density="compact"
+                  :error-messages="form.errors.maximum_balance"
                 />
               </v-col>
 
@@ -151,18 +167,39 @@
                   v-model="form.carry_forward_limit"
                   type="number"
                   step="0.5"
-                  label="Carry Forward Limit *"
+                  label="Carry Forward Limit"
                   variant="outlined"
                   density="compact"
+                  :error-messages="form.errors.carry_forward_limit"
                 />
               </v-col>
               <v-col cols="6">
                 <v-text-field
-                  v-model="form.min_service_months"
+                  v-model="form.minimum_service_months"
                   type="number"
                   label="Min. Service Months *"
                   variant="outlined"
                   density="compact"
+                  :error-messages="form.errors.minimum_service_months"
+                />
+              </v-col>
+
+              <v-col cols="6">
+                <v-text-field
+                  v-model="form.waiting_period"
+                  type="number"
+                  label="Waiting Period (Days)"
+                  variant="outlined"
+                  density="compact"
+                  :error-messages="form.errors.waiting_period"
+                />
+              </v-col>
+              <v-col cols="6">
+                <v-switch
+                  v-model="form.is_active"
+                  label="Is Active?"
+                  color="primary"
+                  hide-details
                 />
               </v-col>
 
@@ -247,6 +284,24 @@
           </v-card-actions>
         </v-card>
       </v-dialog>
+
+      <!-- Toast Notification Snackbar -->
+      <v-snackbar
+        v-model="toast.show"
+        :color="toast.color"
+        :timeout="3500"
+        location="top right"
+      >
+        {{ toast.message }}
+        <template #actions>
+          <v-btn
+            variant="text"
+            icon="mdi-close"
+            size="small"
+            @click="toast.show = false"
+          />
+        </template>
+      </v-snackbar>
     </v-container>
   </SidebarLayout>
 </template>
@@ -266,15 +321,22 @@ export default {
       deleteDialog: false,
       deleting: false,
       itemToDelete: null,
+      toast: {
+        show: false,
+        message: "",
+        color: "success",
+      },
       form: useForm({
         leave_policy_id: null,
         leave_type_id: null,
         accrual_method: "monthly",
         accrual_rate: 1.25,
         grant_frequency: "monthly",
-        max_balance: 15.0,
+        maximum_balance: 15.0,
         carry_forward_limit: 5.0,
-        min_service_months: 6,
+        minimum_service_months: 6,
+        waiting_period: 0,
+        is_active: true,
         allow_negative: false,
         requires_approval: true,
         requires_attachment: false,
@@ -285,38 +347,86 @@ export default {
     };
   },
   methods: {
+
+
     openModal(r = null) {
       this.form.reset();
       this.form.clearErrors();
+
       if (r) {
         this.isEditing = true;
         this.selectedId = r.id;
-        Object.assign(this.form, r);
+
+        this.form.leave_policy_id = r.leave_policy_id;
+        this.form.leave_type_id = r.leave_type_id;
+        this.form.accrual_method = r.accrual_method;
+        this.form.accrual_rate = r.accrual_rate;
+        this.form.grant_frequency = r.grant_frequency;
+        this.form.maximum_balance = r.maximum_balance;
+        this.form.carry_forward_limit = r.carry_forward_limit;
+        this.form.minimum_service_months = r.minimum_service_months;
+        this.form.waiting_period = r.waiting_period ?? 0;
+
+        // Strict Boolean cast for Vuetify v-switch compatibility
+        this.form.is_active = Boolean(r.is_active ?? true);
+        this.form.allow_negative = Boolean(r.allow_negative);
+        this.form.requires_approval = Boolean(r.requires_approval);
+        this.form.requires_attachment = Boolean(r.requires_attachment);
+        this.form.allows_half_day = Boolean(r.allows_half_day);
+        this.form.allows_hourly = Boolean(r.allows_hourly);
+        this.form.expires = Boolean(r.expires);
       } else {
         this.isEditing = false;
         this.selectedId = null;
       }
       this.dialog = true;
     },
+
     submit() {
       if (this.isEditing) {
         this.form.put(route("leave.config.rules.update", this.selectedId), {
-          onSuccess: () => (this.dialog = false),
+          onSuccess: () => {
+            this.dialog = false;
+            this.showToast("Policy rule updated successfully.", "success");
+          },
+          onError: () => {
+            this.showToast(
+              "Failed to update policy rule. Check highlighted inputs.",
+              "error"
+            );
+          },
         });
       } else {
         this.form.post(route("leave.config.rules.store"), {
-          onSuccess: () => (this.dialog = false),
+          onSuccess: () => {
+            this.dialog = false;
+            this.showToast("Policy rule created successfully.", "success");
+          },
+          onError: () => {
+            this.showToast(
+              "Failed to create policy rule. Check highlighted inputs.",
+              "error"
+            );
+          },
         });
       }
     },
+    
     confirmDelete(rule) {
       this.itemToDelete = rule;
       this.deleteDialog = true;
     },
+
     destroy() {
       if (!this.itemToDelete) return;
       this.deleting = true;
       router.delete(route("leave.config.rules.destroy", this.itemToDelete.id), {
+        onSuccess: () => {
+          this.showToast("Policy rule deleted successfully.");
+        },
+        onError: () => {
+          this.showToast("Failed to delete policy rule.", "error");
+        },
         onFinish: () => {
           this.deleting = false;
           this.deleteDialog = false;

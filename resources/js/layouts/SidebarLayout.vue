@@ -403,50 +403,50 @@ export default {
           permission: "dashboard.view",
         },
 
-        myProfile: {
-          title: "My Profile",
-          route: "self-service.my-profile.index",
-          routePrefix: "self-service.my-profile",
-          permission: "profile.view_own",
-        },
+        // myProfile: {
+        //   title: "My Profile",
+        //   route: "self-service.my-profile.index",
+        //   routePrefix: "self-service.my-profile",
+        //   permission: "profile.view_own",
+        // },
 
         myTime: {
           title: "My Time",
           items: [
-            {
-              title: "My Attendance",
-              icon: "mdi-clock-outline",
-              route: "self-service.my-dtr.index",
-              permission: "attendance.view_own",
-              routePrefix: "self-service.my-dtr",
-            },
-            {
-              title: "My Schedule",
-              icon: "mdi-calendar-clock",
-              route: "self-service.my-schedule.index",
-              permission: "schedule.view_own",
-              routePrefix: "self-service.my-schedule",
-            },
+            // {
+            //   title: "My Attendance",
+            //   icon: "mdi-clock-outline",
+            //   route: "self-service.my-dtr.index",
+            //   permission: "attendance.view_own",
+            //   routePrefix: "self-service.my-dtr",
+            // },
+            // {
+            //   title: "My Schedule",
+            //   icon: "mdi-calendar-clock",
+            //   route: "self-service.my-schedule.index",
+            //   permission: "schedule.view_own",
+            //   routePrefix: "self-service.my-schedule",
+            // },
           ],
         },
 
         myLeave: {
           title: "My Leave",
           items: [
-            {
-              title: "My Leave Applications",
-              icon: "mdi-calendar-text",
-              route: "self-service.my-leaves.index",
-              permission: "leave.view_own",
-              routePrefix: "self-service.my-leaves",
-            },
-            {
-              title: "My Leave Balances",
-              icon: "mdi-scale-balance",
-              route: "self-service.my-leave-balances.index",
-              permission: "leave.view_balance_own",
-              routePrefix: "self-service.my-leave-balances",
-            },
+            // {
+            //   title: "My Leave Applications",
+            //   icon: "mdi-calendar-text",
+            //   route: "self-service.my-leaves.index",
+            //   permission: "leave.view_own",
+            //   routePrefix: "self-service.my-leaves",
+            // },
+            // {
+            //   title: "My Leave Balances",
+            //   icon: "mdi-scale-balance",
+            //   route: "self-service.my-leave-balances.index",
+            //   permission: "leave.view_balance_own",
+            //   routePrefix: "self-service.my-leave-balances",
+            // },
           ],
         },
 
@@ -528,20 +528,20 @@ export default {
         leave: {
           title: "Leave Management",
           items: [
-            // {
-            //   title: "Leave Applications",
-            //   icon: "mdi-calendar-text",
-            //   route: "leaves.index",
-            //   permission: "leave.view_own",
-            //   routePrefix: "leaves",
-            // },
-            // {
-            //   title: "Leave Approvals",
-            //   icon: "mdi-calendar-check",
-            //   route: "leaves.approvals.index",
-            //   permission: "leave.approval.view",
-            //   routePrefix: "leaves.approvals",
-            // },
+            {
+              title: "Leave Applications",
+              icon: "mdi-calendar-text",
+              route: "leave.applications.index",
+              permission: "leave.view_own",
+              routePrefix: "leave.applications",
+            },
+            {
+              title: "Leave Approvals",
+              icon: "mdi-calendar-check",
+              route: "leave.approvals.index",
+              permission: "leave.approval.view",
+              routePrefix: "leaves.approvals",
+            },
             {
               title: "Leave Balances",
               icon: "mdi-scale-balance",
@@ -637,7 +637,7 @@ export default {
 
       return [
         this.modules.dashboard,
-        this.modules.myProfile,
+        // this.modules.myProfile,
         this.modules.myTime,
         this.modules.myLeave,
       ];

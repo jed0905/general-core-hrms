@@ -44,7 +44,7 @@ class LeavePolicyRuleController extends Controller
         return redirect()->route('leave.config.rules.index')->with('success', 'Policy rule updated successfully.');
     }
 
-    public function destroy(LeavePolicyRule $leavePolicyRule): RedirectResponse
+    public function destroy(LeavePolicyRule $leavePolicyRule)
     {
         $this->ruleService->deleteRule($leavePolicyRule);
 

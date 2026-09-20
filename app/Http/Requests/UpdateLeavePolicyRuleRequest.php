@@ -14,6 +14,9 @@ class UpdateLeavePolicyRuleRequest extends FormRequest
 
     public function rules(): array
     {
+        $rule = $this->route('leavePolicyRule') ?? $this->route('rule');
+        $ruleId = is_object($rule) ? $rule->id : $rule;
+
         return [
             'leave_policy_id' => ['required', 'exists:leave_policies,id'],
             'leave_type_id' => [
@@ -21,20 +24,22 @@ class UpdateLeavePolicyRuleRequest extends FormRequest
                 'exists:leave_types,id',
                 Rule::unique('leave_policy_rules')
                     ->where(fn($query) => $query->where('leave_policy_id', $this->leave_policy_id))
-                    ->ignore($this->route('leavePolicyRule')),
+                    ->ignore($ruleId),
             ],
-            'accrual_method' => ['required', 'string', 'in:none,monthly,annual,fixed_grant'],
-            'accrual_rate' => ['required', 'numeric', 'min:0'],
-            'grant_frequency' => ['required', 'string', 'in:none,monthly,annual,quarterly'],
-            'max_balance' => ['required', 'numeric', 'min:0'],
-            'carry_forward_limit' => ['required', 'numeric', 'min:0'],
-            'min_service_months' => ['required', 'integer', 'min:0'],
+            'accrual_method' => ['required', 'string', 'in:fixed,monthly,annually,per_payroll,none'],
+            'accrual_rate' => ['nullable', 'numeric', 'min:0'],
+            'grant_frequency' => ['required', 'string', 'in:monthly,quarterly,annually,per_payroll,none'],
+            'maximum_balance' => ['nullable', 'numeric', 'min:0'],
+            'carry_forward_limit' => ['nullable', 'numeric', 'min:0'],
+            'minimum_service_months' => ['required', 'integer', 'min:0'],
+            'waiting_period' => ['nullable', 'integer', 'min:0'],
             'allow_negative' => ['sometimes', 'boolean'],
             'requires_approval' => ['sometimes', 'boolean'],
             'requires_attachment' => ['sometimes', 'boolean'],
             'allows_half_day' => ['sometimes', 'boolean'],
             'allows_hourly' => ['sometimes', 'boolean'],
             'expires' => ['sometimes', 'boolean'],
+            'is_active' => ['sometimes', 'boolean'],
         ];
     }
 }

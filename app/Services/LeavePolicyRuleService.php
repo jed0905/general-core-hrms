@@ -19,8 +19,9 @@ class LeavePolicyRuleService
             ->withQueryString();
     }
 
-    public function createRule(array $data): LeavePolicyRule
+    public function createRule(array $data)
     {
+        dd($data);
         return DB::transaction(fn() => LeavePolicyRule::create([
             'leave_policy_id' => $data['leave_policy_id'],
             'leave_type_id' => $data['leave_type_id'],
@@ -46,17 +47,19 @@ class LeavePolicyRuleService
                 'leave_policy_id' => $data['leave_policy_id'],
                 'leave_type_id' => $data['leave_type_id'],
                 'accrual_method' => $data['accrual_method'],
-                'accrual_rate' => $data['accrual_rate'],
+                'accrual_rate' => $data['accrual_rate'] ?? null,
                 'grant_frequency' => $data['grant_frequency'],
-                'max_balance' => $data['max_balance'],
-                'carry_forward_limit' => $data['carry_forward_limit'],
-                'min_service_months' => $data['min_service_months'],
+                'maximum_balance' => $data['maximum_balance'] ?? null,
+                'carry_forward_limit' => $data['carry_forward_limit'] ?? null,
+                'minimum_service_months' => $data['minimum_service_months'] ?? 0,
+                'waiting_period' => $data['waiting_period'] ?? 0,
                 'allow_negative' => $data['allow_negative'] ?? false,
-                'requires_approval' => $data['requires_approval'] ?? false,
+                'requires_approval' => $data['requires_approval'] ?? true,
                 'requires_attachment' => $data['requires_attachment'] ?? false,
                 'allows_half_day' => $data['allows_half_day'] ?? false,
                 'allows_hourly' => $data['allows_hourly'] ?? false,
                 'expires' => $data['expires'] ?? false,
+                'is_active' => $data['is_active'] ?? true,
             ]);
 
             return $rule->fresh();

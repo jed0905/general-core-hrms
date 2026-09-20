@@ -4,7 +4,7 @@ import '../css/app.css'
 // JS & Libraries
 import './bootstrap'
 import Alpine from 'alpinejs'
-import { createApp, h, ref } from 'vue'
+import { createApp, h, ref, reactive } from 'vue'
 import { createInertiaApp, Link, Head, router } from '@inertiajs/vue3'
 import { resolvePageComponent } from 'laravel-vite-plugin/inertia-helpers'
 import { ZiggyVue } from '../../vendor/tightenco/ziggy/dist/vue.m'
@@ -17,15 +17,11 @@ import * as components from 'vuetify/components'
 import * as labsComponents from 'vuetify/labs/components'
 import * as directives from 'vuetify/directives'
 import { aliases, mdi } from 'vuetify/iconsets/mdi'
-import { VOverlay, VProgressCircular } from 'vuetify/components'
+import { VOverlay, VProgressCircular, VSnackbar, VIcon, VBtn } from 'vuetify/components'
 
 // Echo & Pusher
 import Echo from 'laravel-echo'
 import Pusher from 'pusher-js'
-
-// Vue Toastification
-import Toast, { useToast } from 'vue-toastification'
-import 'vue-toastification/dist/index.css'
 
 // Initialize Top-Level Code
 window.Alpine = Alpine
@@ -43,6 +39,33 @@ const isNavigating = ref(false)
 router.on('start', () => { isNavigating.value = true })
 router.on('finish', () => { isNavigating.value = false })
 router.on('cancel', () => { isNavigating.value = false })
+
+// Global Toast State (VSnackbar)
+const toastState = reactive({
+    show: false,
+    message: '',
+    color: 'primary',
+    icon: 'mdi-bell-outline',
+    timeout: 3000,
+})
+
+const triggerToast = (message, type = 'default', timeout = 3000) => {
+    const toastConfigs = {
+        success: { color: 'success', icon: 'mdi-check-circle-outline' },
+        error: { color: 'error', icon: 'mdi-alert-circle-outline' },
+        warning: { color: 'warning', icon: 'mdi-alert-outline' },
+        info: { color: 'info', icon: 'mdi-information-outline' },
+        default: { color: 'primary', icon: 'mdi-bell-outline' },
+    }
+
+    const config = toastConfigs[type] || toastConfigs.default
+
+    toastState.message = message
+    toastState.color = config.color
+    toastState.icon = config.icon
+    toastState.timeout = timeout
+    toastState.show = true
+}
 
 createInertiaApp({
     title: (title) => `${title} - ${appName}`,
@@ -131,33 +154,63 @@ createInertiaApp({
                                 }),
                         }
                     ),
+
+                    // Top-Right VSnackbar
+                    h(
+                        VSnackbar,
+                        {
+                            modelValue: toastState.show,
+                            'onUpdate:modelValue': (val) => { toastState.show = val },
+                            color: toastState.color,
+                            timeout: toastState.timeout,
+                            location: 'top right',
+                            variant: 'elevated',
+                            elevation: 4,
+                            rounded: 'md',
+                            density: 'compact',
+                            style: {
+                                position: 'fixed',
+                                top: '16px',
+                                right: '16px',
+                                left: 'auto',
+                                bottom: 'auto',
+                                maxWidth: '320px',
+                                minWidth: 'auto',
+                                zIndex: 100000,
+                            },
+                        },
+                        {
+                            default: () =>
+                                h('div', { class: 'd-flex align-center ga-2 py-0 px-0 w-100' }, [
+                                    h(VIcon, {
+                                        icon: toastState.icon,
+                                        size: '18',
+                                        class: 'flex-shrink-0',
+                                    }),
+                                    h(
+                                        'span',
+                                        { class: 'text-caption font-weight-medium flex-grow-1' },
+                                        toastState.message
+                                    ),
+                                    h(VBtn, {
+                                        icon: 'mdi-close',
+                                        variant: 'text',
+                                        density: 'compact',
+                                        size: 'x-small',
+                                        color: 'inherit',
+                                        onClick: () => { toastState.show = false },
+                                    }),
+                                ]),
+                        }
+                    ),
                 ]),
         })
             .use(ZiggyVue)
             .use(vuetify)
-            .use(Toast, {
-                timeout: 3500,
-                position: 'top-center',
-                hideProgressBar: true,
-                shareAppContext: true,
-            })
             .mixin({
                 methods: {
                     showToast: function (message, type = 'default') {
-                        const toast = useToast()
-                        if (type === 'success') {
-                            toast.success(message)
-                        } else if (type === 'error') {
-                            toast.error(message)
-                        } else if (type === 'warning') {
-                            toast.warning(message)
-                        } else if (type === 'info') {
-                            toast.info(message)
-                        } else {
-                            toast(message, {
-                                type: type,
-                            })
-                        }
+                        triggerToast(message, type)
                     },
                     triggerRouteLink: function (routeName, routeParams, visitParams) {
                         router.visit(route(routeName, routeParams), visitParams)

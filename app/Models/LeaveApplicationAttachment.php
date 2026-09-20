@@ -17,4 +17,9 @@ class LeaveApplicationAttachment extends Model
         'file_size',
         'uploaded_by',
     ];
+
+    public function leave()
+    {
+        return $this->belongsTo(LeaveApplication::class, 'leave_application_id', 'id');
+    }
 }
