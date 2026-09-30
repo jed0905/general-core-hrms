@@ -2,28 +2,13 @@
 
 namespace App\Http\Requests\Leave;
 
-use Illuminate\Contracts\Validation\ValidationRule;
-use Illuminate\Foundation\Http\FormRequest;
-
-class UpdateLeaveApplicationRequest extends FormRequest
+class UpdateLeaveApplicationRequest extends StoreLeaveApplicationRequest
 {
     /**
-     * Determine if the user is authorized to make this request.
+     * Ownership, the update_own/update capability and the editable state are checked by the policy.
      */
     public function authorize(): bool
     {
-        return false;
-    }
-
-    /**
-     * Get the validation rules that apply to the request.
-     *
-     * @return array<string, ValidationRule|array<mixed>|string>
-     */
-    public function rules(): array
-    {
-        return [
-            //
-        ];
+        return $this->user()->can('update', $this->route('leaveApplication'));
     }
 }

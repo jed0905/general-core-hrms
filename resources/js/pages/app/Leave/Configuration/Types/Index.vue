@@ -15,6 +15,7 @@
           color="primary"
           prepend-icon="mdi-plus"
           elevation="0"
+          v-if="can('leave_type.create')"
           @click="openModal()"
         >
           Add Leave Type
@@ -59,13 +60,14 @@
               </td>
               <td class="text-end">
                 <v-btn
+                  v-if="can('leave_type.update')"
                   icon="mdi-pencil-outline"
                   variant="text"
                   size="small"
                   @click="openModal(type)"
                 />
                 <v-btn
-                  v-if="type.is_active"
+                  v-if="type.is_active && can('leave_type.archive')"
                   icon="mdi-archive-outline"
                   variant="text"
                   size="small"
@@ -159,10 +161,12 @@
 
 <script>
 import { Head, router, useForm } from "@inertiajs/vue3";
-import SidebarLayout from "@/Layouts/SidebarLayout.vue";
+import SidebarLayout from "@/layouts/SidebarLayout.vue";
+import permissions from "@/mixins/permissions";
 
 export default {
   components: { SidebarLayout, Head },
+  mixins: [permissions],
   props: { leaveTypes: Object },
   data() {
     return {

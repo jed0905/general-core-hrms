@@ -17,6 +17,7 @@
             variant="outlined"
             prepend-icon="mdi-plus-minus-box"
             elevation="0"
+            v-if="can('leave.balance.adjust')"
             @click="openAdjustModal()"
           >
             Quick Adjust
@@ -25,6 +26,7 @@
             color="primary"
             prepend-icon="mdi-plus"
             elevation="0"
+            v-if="can('leave.balance.create')"
             @click="openModal()"
           >
             Initialize Balance
@@ -139,6 +141,7 @@
               <td>{{ b.as_of_date }}</td>
               <td class="text-end">
                 <v-btn
+                  v-if="can('leave.balance.adjust')"
                   icon="mdi-plus-minus"
                   variant="text"
                   size="small"
@@ -147,6 +150,7 @@
                   @click="openAdjustModal(b)"
                 />
                 <v-btn
+                  v-if="can('leave.balance.update')"
                   icon="mdi-pencil-outline"
                   variant="text"
                   size="small"
@@ -337,10 +341,12 @@
 
 <script>
 import { Head, router, useForm } from "@inertiajs/vue3";
-import SidebarLayout from "@/Layouts/SidebarLayout.vue";
+import SidebarLayout from "@/layouts/SidebarLayout.vue";
+import permissions from "@/mixins/permissions";
 
 export default {
   components: { SidebarLayout, Head },
+  mixins: [permissions],
   props: {
     balances: Object,
     leaveTypes: Array,

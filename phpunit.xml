@@ -19,10 +19,16 @@
     </source>
     <php>
         <env name="APP_ENV" value="testing"/>
+        <!-- Throwaway key for the test suite only (sessions/cookies); not used anywhere else. -->
+        <env name="APP_KEY" value="base64:ZrAw76fZVQc0+NpC3jfmsMNF/cai5XyQDrpAV+gU6P8=" force="true"/>
         <env name="BCRYPT_ROUNDS" value="4"/>
         <env name="CACHE_DRIVER" value="array"/>
-        <!-- <env name="DB_CONNECTION" value="sqlite"/> -->
-        <!-- <env name="DB_DATABASE" value=":memory:"/> -->
+        <!-- In-memory SQLite: all migrations verified compatible. force="true" so a
+             DB_* value from the shell or .env.testing can never point tests at MySQL. -->
+        <env name="DB_CONNECTION" value="sqlite" force="true"/>
+        <env name="DB_DATABASE" value=":memory:" force="true"/>
+        <env name="DB_URL" value="" force="true"/>
+        <env name="DATABASE_URL" value="" force="true"/>
         <env name="MAIL_MAILER" value="array"/>
         <env name="QUEUE_CONNECTION" value="sync"/>
         <env name="SESSION_DRIVER" value="array"/>

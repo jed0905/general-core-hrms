@@ -1,5 +1,7 @@
 <template>
   <SidebarLayout>
+    <Head title="Leave Approvals" />
+
     <v-container fluid class="pa-6">
       <!-- Header -->
       <v-row class="mb-4" align="center">
@@ -90,7 +92,7 @@
               />
 
               <v-btn
-                v-if="$page.props.auth?.can?.['leave.approval.approve']"
+                v-if="item.can?.approve"
                 icon="mdi-check-circle-outline"
                 variant="text"
                 size="small"
@@ -99,7 +101,7 @@
               />
 
               <v-btn
-                v-if="$page.props.auth?.can?.['leave.approval.return']"
+                v-if="item.can?.return"
                 icon="mdi-undo-variant"
                 variant="text"
                 size="small"
@@ -108,7 +110,7 @@
               />
 
               <v-btn
-                v-if="$page.props.auth?.can?.['leave.approval.reject']"
+                v-if="item.can?.reject"
                 icon="mdi-close-circle-outline"
                 variant="text"
                 size="small"
@@ -197,6 +199,14 @@
           </v-card-text>
           <v-divider />
           <v-card-actions class="pa-3">
+            <v-btn
+              variant="text"
+              size="small"
+              color="primary"
+              prepend-icon="mdi-open-in-new"
+              @click="openFullDetails(selectedApplication)"
+              >Attachments &amp; history</v-btn
+            >
             <v-spacer />
             <v-btn
               variant="outlined"
@@ -266,14 +276,15 @@
 </template>
 
 <script>
-import { router } from "@inertiajs/vue3";
-import SidebarLayout from "@/Layouts/SidebarLayout.vue";
+import { Head, router } from "@inertiajs/vue3";
+import SidebarLayout from "@/layouts/SidebarLayout.vue";
 
 export default {
   name: "LeaveApprovalsIndex",
 
   components: {
     SidebarLayout,
+    Head,
   },
 
   props: {
@@ -317,6 +328,11 @@ export default {
   },
 
   methods: {
+    openFullDetails(application) {
+      router.visit(
+        route("leave.applications.show", { leaveApplication: application.id })
+      );
+    },
     getFullName(employee) {
       if (!employee) return "N/A";
       const name = `${employee.emp_first_name || ""} ${

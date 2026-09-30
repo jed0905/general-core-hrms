@@ -16,6 +16,7 @@
           color="primary"
           prepend-icon="mdi-plus"
           elevation="0"
+          v-if="can('leave_policy_rule.create')"
           @click="openModal()"
         >
           Add Policy Rule
@@ -55,12 +56,14 @@
               <td>{{ r.carry_forward_limit }} days</td>
               <td class="text-end">
                 <v-btn
+                  v-if="can('leave_policy_rule.update')"
                   icon="mdi-pencil-outline"
                   variant="text"
                   size="small"
                   @click="openModal(r)"
                 />
                 <v-btn
+                  v-if="can('leave_policy_rule.delete')"
                   icon="mdi-delete-outline"
                   variant="text"
                   size="small"
@@ -308,10 +311,12 @@
 
 <script>
 import { Head, router, useForm } from "@inertiajs/vue3";
-import SidebarLayout from "@/Layouts/SidebarLayout.vue";
+import SidebarLayout from "@/layouts/SidebarLayout.vue";
+import permissions from "@/mixins/permissions";
 
 export default {
   components: { SidebarLayout, Head },
+  mixins: [permissions],
   props: { rules: Object, policies: Array, leaveTypes: Array },
   data() {
     return {

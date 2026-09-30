@@ -33,6 +33,7 @@
           </v-btn-toggle>
 
           <v-btn
+            v-if="canApply"
             color="primary"
             prepend-icon="mdi-plus"
             elevation="0"
@@ -42,6 +43,16 @@
           </v-btn>
         </div>
       </div>
+
+      <v-alert
+        v-if="!hasEmployeeRecord"
+        type="info"
+        variant="tonal"
+        class="mb-6"
+      >
+        Your account is not linked to an employee record, so you can't file
+        leave here. Contact HR if this is unexpected.
+      </v-alert>
 
       <!-- Balances Overview Cards -->
       <v-row class="mb-6">
@@ -107,6 +118,7 @@
               >Clear</v-btn
             >
             <v-btn
+              v-if="canApply"
               size="small"
               color="primary"
               elevation="0"
@@ -200,7 +212,7 @@
                 </div>
 
                 <v-btn
-                  v-if="cell.isCurrentMonth"
+                  v-if="cell.isCurrentMonth && canApply"
                   icon="mdi-plus"
                   size="x-small"
                   variant="text"
@@ -283,14 +295,24 @@
               </td>
               <td class="text-end">
                 <v-btn
-                  v-if="app.status === 'pending'"
+                  v-if="app.can?.view"
+                  icon="mdi-eye-outline"
+                  variant="text"
+                  size="small"
+                  color="info"
+                  title="View details"
+                  @click="viewApplication(app)"
+                />
+                <v-btn
+                  v-if="app.can?.update"
                   icon="mdi-pencil-outline"
                   variant="text"
                   size="small"
+                  :title="app.status === 'returned' ? 'Correct and resubmit' : 'Edit'"
                   @click="openModal(app)"
                 />
                 <v-btn
-                  v-if="app.status === 'pending'"
+                  v-if="app.can?.cancel"
                   icon="mdi-cancel"
                   variant="text"
                   size="small"
@@ -357,6 +379,7 @@
           </p>
 
           <v-btn
+            v-if="canApply"
             block
             color="primary"
             class="mt-3"
@@ -370,6 +393,28 @@
           </v-btn>
         </v-card>
       </v-bottom-sheet>
+
+      <!-- Cancel Confirmation -->
+      <v-dialog v-model="cancelDialog" max-width="420">
+        <v-card class="pa-2 rounded-lg">
+          <v-card-title class="font-weight-bold">Cancel leave application?</v-card-title>
+          <v-card-text>
+            <span v-if="applicationToCancel">
+              Your {{ applicationToCancel.leave_type?.name }} request for
+              {{ applicationToCancel.total_days }} day(s) will be cancelled.
+              <template v-if="applicationToCancel.status === 'approved'">
+                The used days will be returned to the balance.
+              </template>
+            </span>
+          </v-card-text>
+          <v-card-actions class="justify-end ga-2">
+            <v-btn variant="outlined" @click="cancelDialog = false">Keep</v-btn>
+            <v-btn color="error" :loading="cancelling" @click="cancelApplication">
+              Cancel Application
+            </v-btn>
+          </v-card-actions>
+        </v-card>
+      </v-dialog>
 
       <!-- Apply / Edit Leave Modal -->
       <v-dialog v-model="dialog" max-width="700" persistent>
@@ -501,10 +546,12 @@
 
 <script>
 import { Head, router, useForm } from "@inertiajs/vue3";
-import SidebarLayout from "@/Layouts/SidebarLayout.vue";
+import SidebarLayout from "@/layouts/SidebarLayout.vue";
+import permissions from "@/mixins/permissions";
 
 export default {
   components: { SidebarLayout, Head },
+  mixins: [permissions],
   props: {
     applications: Object,
     history: Object,
@@ -512,6 +559,7 @@ export default {
     teamEvents: Array,
     leaveTypes: Array,
     filters: Object,
+    hasEmployeeRecord: { type: Boolean, default: true },
   },
   data() {
     return {
@@ -525,6 +573,9 @@ export default {
       dayDrawer: false,
       selectedDayDate: "",
       selectedDayEvents: [],
+      cancelDialog: false,
+      cancelling: false,
+      applicationToCancel: null,
       form: useForm({
         leave_type_id: null,
         reason: "",
@@ -543,6 +594,9 @@ export default {
     };
   },
   computed: {
+    canApply() {
+      return this.hasEmployeeRecord && this.can("leave.create");
+    },
     currentMonthLabel() {
       return this.currentDate.toLocaleString("default", {
         month: "long",
@@ -701,7 +755,7 @@ export default {
         this.form.reason = app.reason ?? "";
         this.form.dates =
           app.dates?.map((d) => ({
-            leave_date: d.leave_date,
+            leave_date: String(d.leave_date ?? "").substring(0, 10),
             duration_type: d.duration_type,
             hours: d.hours,
             start_time: d.start_time,
@@ -736,20 +790,57 @@ export default {
           pending: "warning",
           approved: "success",
           rejected: "error",
+          returned: "info",
           cancelled: "grey",
         }[s] || "default"
       );
     },
     submit() {
-      const targetRoute = this.isEditing
-        ? route("leave.applications.update", this.selectedId)
-        : route("leave.applications.store");
-      this.form.post(targetRoute, {
+      const options = {
+        forceFormData: true,
         onSuccess: () => {
           this.dialog = false;
           this.clearSelection();
         },
-      });
+      };
+
+      if (this.isEditing) {
+        // PUT route; file uploads need a multipart POST with method spoofing.
+        this.form
+          .transform((data) => ({ ...data, _method: "put" }))
+          .post(route("leave.applications.update", this.selectedId), options);
+      } else {
+        this.form
+          .transform((data) => data)
+          .post(route("leave.applications.store"), options);
+      }
+    },
+    viewApplication(app) {
+      router.visit(
+        route("leave.applications.show", { leaveApplication: app.id })
+      );
+    },
+    confirmCancel(app) {
+      this.applicationToCancel = app;
+      this.cancelDialog = true;
+    },
+    cancelApplication() {
+      if (!this.applicationToCancel) return;
+      this.cancelling = true;
+      router.post(
+        route("leave.applications.cancel", {
+          leaveApplication: this.applicationToCancel.id,
+        }),
+        {},
+        {
+          preserveScroll: true,
+          onFinish: () => {
+            this.cancelling = false;
+            this.cancelDialog = false;
+            this.applicationToCancel = null;
+          },
+        }
+      );
     },
   },
 };

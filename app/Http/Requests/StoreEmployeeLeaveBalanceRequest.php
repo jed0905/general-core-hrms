@@ -8,7 +8,7 @@ class StoreEmployeeLeaveBalanceRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return true;
+        return $this->user()->can('leave.balance.create');
     }
 
     public function rules(): array

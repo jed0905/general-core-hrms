@@ -3,10 +3,9 @@
 namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
-use Spatie\Permission\Models\Role;
 use Spatie\Permission\Models\Permission;
+use Spatie\Permission\Models\Role;
 use Spatie\Permission\PermissionRegistrar;
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 
 class RolesAndPermissionsSeeder extends Seeder
 {
@@ -16,7 +15,7 @@ class RolesAndPermissionsSeeder extends Seeder
     public function run(): void
     {
 
-        app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
+        app()[PermissionRegistrar::class]->forgetCachedPermissions();
 
         // New Set of Permissions for existing roles
         // Define permissions
@@ -136,9 +135,8 @@ class RolesAndPermissionsSeeder extends Seeder
             'leave_type.create',
             'leave_type.update',
             'leave_type.archive',
-            
+
             'leave.view',
-            'leave.create',
             'leave.update',
             'leave.delete',
             'leave.cancel',
@@ -172,13 +170,18 @@ class RolesAndPermissionsSeeder extends Seeder
             'leave_policy_rule.update',
             'leave_policy_rule.delete',
 
+            // Leave Approval Workflows (steps are managed through the workflow)
+            'leave_approval_workflow.view',
+            'leave_approval_workflow.create',
+            'leave_approval_workflow.update',
+            'leave_approval_workflow.archive',
+
             // Holidays
             'holiday.view',
             'holiday.create',
             'holiday.update',
             'holiday.archive',
             'holiday.export',
-
 
             // Job Title Management
             'job_title.view',
@@ -263,6 +266,11 @@ class RolesAndPermissionsSeeder extends Seeder
         | Companies can modify the permissions assigned to each role
         | or create their own custom roles.
         |
+        | Default permissions are only applied when a role is first created,
+        | so re-running this seeder never overwrites a company's
+        | customizations. Permission changes for already-deployed roles
+        | ship as migrations (see *_update_leave_permissions_and_role_assignments).
+        |
         */
 
         $superadmin = Role::firstOrCreate([
@@ -306,7 +314,8 @@ class RolesAndPermissionsSeeder extends Seeder
         |--------------------------------------------------------------------------
         */
 
-        $superadmin->syncPermissions(
+        // Additive: superadmin always holds every permission, including new ones.
+        $superadmin->givePermissionTo(
             Permission::where('guard_name', 'web')->get()
         );
 
@@ -316,7 +325,7 @@ class RolesAndPermissionsSeeder extends Seeder
         |--------------------------------------------------------------------------
         */
 
-        $hrDirector->syncPermissions([
+        $this->seedDefaultPermissions($hrDirector, [
 
             // Dashboard
             'dashboard.view',
@@ -407,13 +416,18 @@ class RolesAndPermissionsSeeder extends Seeder
             'attendance.reprocess',
             'attendance.finalize',
 
-            // Leave
-            'leave.view',
+            // Leave: self-service
+            'leave.view_own',
             'leave.create',
+            'leave.update_own',
+            'leave.cancel_own',
+            'leave.view_balance_own',
+            'leave.view_history_own',
+
+            // Leave: HR transactional
+            'leave.view',
             'leave.update',
-            'leave.delete',
             'leave.cancel',
-            'leave.submit',
             'leave.export',
 
             // Leave Approval
@@ -432,7 +446,12 @@ class RolesAndPermissionsSeeder extends Seeder
             'leave.balance_history.view',
             'leave.balance_history.export',
 
-            // Leave Policies
+            // Leave Configuration
+            'leave_type.view',
+            'leave_type.create',
+            'leave_type.update',
+            'leave_type.archive',
+
             'leave_policy.view',
             'leave_policy.create',
             'leave_policy.update',
@@ -442,6 +461,14 @@ class RolesAndPermissionsSeeder extends Seeder
             'leave_policy_rule.create',
             'leave_policy_rule.update',
             'leave_policy_rule.delete',
+
+            'leave_approval_workflow.view',
+            'leave_approval_workflow.create',
+            'leave_approval_workflow.update',
+            'leave_approval_workflow.archive',
+
+            // Leave Reports
+            'report.leave',
 
             // Holidays
             'holiday.view',
@@ -496,7 +523,7 @@ class RolesAndPermissionsSeeder extends Seeder
         |--------------------------------------------------------------------------
         */
 
-        $hrManager->syncPermissions([
+        $this->seedDefaultPermissions($hrManager, [
 
             // Dashboard
             'dashboard.view',
@@ -572,12 +599,18 @@ class RolesAndPermissionsSeeder extends Seeder
             'attendance.process',
             'attendance.reprocess',
 
-            // Leave
-            'leave.view',
+            // Leave: self-service
+            'leave.view_own',
             'leave.create',
+            'leave.update_own',
+            'leave.cancel_own',
+            'leave.view_balance_own',
+            'leave.view_history_own',
+
+            // Leave: HR transactional
+            'leave.view',
             'leave.update',
             'leave.cancel',
-            'leave.submit',
             'leave.export',
 
             // Leave Approval
@@ -589,14 +622,17 @@ class RolesAndPermissionsSeeder extends Seeder
             // Leave Balances
             'leave.balance.view',
             'leave.balance.create',
-            'leave.balance.update',
             'leave.balance.adjust',
             'leave.balance.export',
 
             'leave.balance_history.view',
             'leave.balance_history.export',
 
-            // Leave Policies
+            // Leave Configuration
+            'leave_type.view',
+            'leave_type.create',
+            'leave_type.update',
+
             'leave_policy.view',
             'leave_policy.create',
             'leave_policy.update',
@@ -604,6 +640,10 @@ class RolesAndPermissionsSeeder extends Seeder
             'leave_policy_rule.view',
             'leave_policy_rule.create',
             'leave_policy_rule.update',
+
+            'leave_approval_workflow.view',
+            'leave_approval_workflow.create',
+            'leave_approval_workflow.update',
 
             // Holidays
             'holiday.view',
@@ -631,7 +671,7 @@ class RolesAndPermissionsSeeder extends Seeder
         |--------------------------------------------------------------------------
         */
 
-        $hrStaff->syncPermissions([
+        $this->seedDefaultPermissions($hrStaff, [
 
             // Dashboard
             'dashboard.view',
@@ -686,30 +726,32 @@ class RolesAndPermissionsSeeder extends Seeder
             'attendance.adjust',
             'attendance.export',
 
-            // Leave
-            'leave.view',
+            // Leave: self-service
+            'leave.view_own',
             'leave.create',
-            'leave.update',
-            'leave.cancel',
-            'leave.submit',
-            'leave.export',
+            'leave.update_own',
+            'leave.cancel_own',
+            'leave.view_balance_own',
+            'leave.view_history_own',
 
-            // Leave Approval
-            'leave.approval.view',
+            // Leave: HR transactional
+            'leave.view',
+            'leave.update',
+            'leave.export',
 
             // Leave Balances
             'leave.balance.view',
             'leave.balance.create',
-            'leave.balance.update',
-            'leave.balance.adjust',
             'leave.balance.export',
 
             'leave.balance_history.view',
             'leave.balance_history.export',
 
-            // Leave Policies
+            // Leave Configuration (view only)
+            'leave_type.view',
             'leave_policy.view',
             'leave_policy_rule.view',
+            'leave_approval_workflow.view',
 
             // Holidays
             'holiday.view',
@@ -775,6 +817,31 @@ class RolesAndPermissionsSeeder extends Seeder
         //     'report.leave',
         // ]);
 
+        // Leave access only. The payroll/compensation permissions above do not exist yet.
+        $this->seedDefaultPermissions($payroll, [
+
+            // Leave: self-service
+            'leave.view_own',
+            'leave.create',
+            'leave.update_own',
+            'leave.cancel_own',
+            'leave.view_balance_own',
+            'leave.view_history_own',
+
+            // Leave (read-only, for pay computation)
+            'leave.view',
+            'leave.export',
+
+            'leave.balance.view',
+            'leave.balance.export',
+
+            'leave.balance_history.view',
+            'leave.balance_history.export',
+
+            // Reports
+            'report.leave',
+        ]);
+
         /*
         |--------------------------------------------------------------------------
         | Supervisor
@@ -785,7 +852,7 @@ class RolesAndPermissionsSeeder extends Seeder
         |
         */
 
-        $supervisor->syncPermissions([
+        $this->seedDefaultPermissions($supervisor, [
 
             // Dashboard
             'dashboard.view',
@@ -796,8 +863,7 @@ class RolesAndPermissionsSeeder extends Seeder
             // Attendance
             'attendance.view',
 
-            // Leave
-            'leave.view',
+            // Leave Approval (record access is limited to assigned approval steps)
             'leave.approval.view',
             'leave.approval.approve',
             'leave.approval.reject',
@@ -839,7 +905,7 @@ class RolesAndPermissionsSeeder extends Seeder
         |--------------------------------------------------------------------------
         */
 
-        $employee->syncPermissions([
+        $this->seedDefaultPermissions($employee, [
 
             // Dashboard
             'dashboard.view',
@@ -871,5 +937,17 @@ class RolesAndPermissionsSeeder extends Seeder
         */
 
         app()[PermissionRegistrar::class]->forgetCachedPermissions();
+    }
+
+    /**
+     * Apply a role's default permissions only when the role was just created.
+     */
+    private function seedDefaultPermissions(Role $role, array $permissions): void
+    {
+        if (! $role->wasRecentlyCreated) {
+            return;
+        }
+
+        $role->givePermissionTo($permissions);
     }
 }

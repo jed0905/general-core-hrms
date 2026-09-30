@@ -540,7 +540,7 @@ export default {
               icon: "mdi-calendar-check",
               route: "leave.approvals.index",
               permission: "leave.approval.view",
-              routePrefix: "leaves.approvals",
+              routePrefix: "leave.approvals",
             },
             {
               title: "Leave Balances",
@@ -569,6 +569,13 @@ export default {
               route: "leave.config.rules.index",
               permission: "leave_policy_rule.view",
               routePrefix: "leave.config.rules",
+            },
+            {
+              title: "Approval Workflows",
+              icon: "mdi-sitemap-outline",
+              route: "leave.config.workflows.index",
+              permission: "leave_approval_workflow.view",
+              routePrefix: "leave.config.workflows",
             },
           ],
         },
@@ -640,6 +647,10 @@ export default {
         // this.modules.myProfile,
         this.modules.myTime,
         this.modules.myLeave,
+        // Leave is permission-driven for every user: visibleNavItems keeps
+        // only the items the user has permission for, and hides the group
+        // when none remain.
+        this.modules.leave,
       ];
     },
 

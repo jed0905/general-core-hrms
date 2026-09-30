@@ -8,7 +8,7 @@ class AdjustEmployeeLeaveBalanceRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return true;
+        return $this->user()->can('leave.balance.adjust');
     }
 
     public function rules(): array

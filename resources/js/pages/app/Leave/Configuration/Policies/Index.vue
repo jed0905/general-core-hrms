@@ -15,6 +15,7 @@
           color="primary"
           prepend-icon="mdi-plus"
           elevation="0"
+          v-if="can('leave_policy.create')"
           @click="openModal()"
         >
           Add Leave Policy
@@ -65,13 +66,14 @@
               </td>
               <td class="text-end">
                 <v-btn
+                  v-if="can('leave_policy.update')"
                   icon="mdi-pencil-outline"
                   variant="text"
                   size="small"
                   @click="openModal(p)"
                 />
                 <v-btn
-                  v-if="p.is_active"
+                  v-if="p.is_active && can('leave_policy.archive')"
                   icon="mdi-archive-outline"
                   variant="text"
                   size="small"
@@ -142,10 +144,12 @@
 
 <script>
 import { Head, router, useForm } from "@inertiajs/vue3";
-import SidebarLayout from "@/Layouts/SidebarLayout.vue";
+import SidebarLayout from "@/layouts/SidebarLayout.vue";
+import permissions from "@/mixins/permissions";
 
 export default {
   components: { SidebarLayout, Head },
+  mixins: [permissions],
   props: { policies: Object },
   data() {
     return {

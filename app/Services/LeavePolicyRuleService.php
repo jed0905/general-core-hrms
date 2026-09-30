@@ -12,31 +12,32 @@ class LeavePolicyRuleService
     {
         return LeavePolicyRule::query()
             ->with(['policy', 'leaveType'])
-            ->when(!empty($filters['policy_id']), fn($q) => $q->where('leave_policy_id', $filters['policy_id']))
-            ->when(!empty($filters['leave_type_id']), fn($q) => $q->where('leave_type_id', $filters['leave_type_id']))
+            ->when(! empty($filters['policy_id']), fn ($q) => $q->where('leave_policy_id', $filters['policy_id']))
+            ->when(! empty($filters['leave_type_id']), fn ($q) => $q->where('leave_type_id', $filters['leave_type_id']))
             ->latest()
             ->paginate($perPage)
             ->withQueryString();
     }
 
-    public function createRule(array $data)
+    public function createRule(array $data): LeavePolicyRule
     {
-        dd($data);
-        return DB::transaction(fn() => LeavePolicyRule::create([
+        return DB::transaction(fn () => LeavePolicyRule::create([
             'leave_policy_id' => $data['leave_policy_id'],
             'leave_type_id' => $data['leave_type_id'],
             'accrual_method' => $data['accrual_method'],
-            'accrual_rate' => $data['accrual_rate'],
+            'accrual_rate' => $data['accrual_rate'] ?? null,
             'grant_frequency' => $data['grant_frequency'],
-            'max_balance' => $data['max_balance'],
-            'carry_forward_limit' => $data['carry_forward_limit'],
-            'min_service_months' => $data['min_service_months'],
+            'maximum_balance' => $data['maximum_balance'] ?? null,
+            'carry_forward_limit' => $data['carry_forward_limit'] ?? null,
+            'minimum_service_months' => $data['minimum_service_months'] ?? 0,
+            'waiting_period' => $data['waiting_period'] ?? 0,
             'allow_negative' => $data['allow_negative'] ?? false,
             'requires_approval' => $data['requires_approval'] ?? true,
             'requires_attachment' => $data['requires_attachment'] ?? false,
             'allows_half_day' => $data['allows_half_day'] ?? true,
             'allows_hourly' => $data['allows_hourly'] ?? false,
             'expires' => $data['expires'] ?? false,
+            'is_active' => $data['is_active'] ?? true,
         ]));
     }
 
@@ -68,6 +69,6 @@ class LeavePolicyRuleService
 
     public function deleteRule(LeavePolicyRule $rule): bool
     {
-        return DB::transaction(fn() => $rule->delete());
+        return DB::transaction(fn () => $rule->delete());
     }
 }

@@ -2,7 +2,6 @@
 
 namespace App\Services\Leave;
 
-use App\Models\EmployeeLeaveBalance;
 use App\Models\LeaveApplication;
 use App\Models\LeaveApplicationApproval;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -11,8 +10,13 @@ use Illuminate\Validation\ValidationException;
 
 class LeaveApprovalService
 {
+    public function __construct(
+        protected LeaveBalanceMovementService $balances
+    ) {}
+
     /**
-     * Get paginated pending applications assigned to the given approver employee.
+     * Applications waiting on the given approver right now, i.e. where their
+     * step is the lowest pending one. Later steps appear once it is their turn.
      */
     public function getPendingApprovals(int $approverEmployeeId, array $filters = [], int $perPage = 15): LengthAwarePaginator
     {
@@ -22,56 +26,64 @@ class LeaveApprovalService
             'leaveType:id,name,code',
             'dates',
             'attachments',
-            'approvals' => fn($q) => $q->orderBy('approval_order'),
+            'approvals' => fn ($q) => $q->orderBy('approval_order'),
         ])
-            ->where('status', 'pending')
+            ->where('status', LeaveApplication::STATUS_PENDING)
             ->whereHas('approvals', function ($q) use ($approverEmployeeId) {
                 $q->where('approver_id', $approverEmployeeId)
-                    ->where('status', 'pending');
+                    ->where('status', LeaveApplicationApproval::STATUS_PENDING)
+                    ->whereNotExists(function ($earlier) {
+                        $earlier->from('leave_application_approvals as earlier')
+                            ->whereColumn('earlier.leave_application_id', 'leave_application_approvals.leave_application_id')
+                            ->where('earlier.status', LeaveApplicationApproval::STATUS_PENDING)
+                            ->whereColumn('earlier.approval_order', '<', 'leave_application_approvals.approval_order');
+                    });
             })
-            ->when(!empty($filters['leave_type_id']), fn($q) => $q->where('leave_type_id', $filters['leave_type_id']))
+            ->when(! empty($filters['leave_type_id']), fn ($q) => $q->where('leave_type_id', $filters['leave_type_id']))
             ->orderBy('id', 'desc')
             ->paginate($perPage)
             ->withQueryString();
     }
 
     /**
-     * Approve the leave application step.
+     * Approve the approver's step; the last step approves the application
+     * and moves pending -> used.
      */
     public function approve(LeaveApplication $application, int $approverEmployeeId, ?string $remarks = null): LeaveApplication
     {
         return DB::transaction(function () use ($application, $approverEmployeeId, $remarks) {
+            $application = $this->lockApplication($application);
             $approvalStep = $this->getPendingStepForApprover($application, $approverEmployeeId);
 
-            // 1. Mark current step as approved
             $approvalStep->update([
-                'status' => 'approved',
+                'status' => LeaveApplicationApproval::STATUS_APPROVED,
                 'acted_at' => now(),
                 'remarks' => $remarks,
             ]);
 
-            // 2. Check if remaining pending approval steps exist
             $hasMorePendingSteps = $application->approvals()
-                ->where('status', 'pending')
-                ->where('approval_order', '>', $approvalStep->approval_order)
+                ->where('status', LeaveApplicationApproval::STATUS_PENDING)
                 ->exists();
 
-            // 3. Final Approval: Update Application status & adjust Leave Balances
-            if (!$hasMorePendingSteps) {
+            if (! $hasMorePendingSteps) {
                 $application->update([
-                    'status' => 'approved',
+                    'status' => LeaveApplication::STATUS_APPROVED,
                     'approved_at' => now(),
                 ]);
 
-                $balance = EmployeeLeaveBalance::where('employee_id', $application->employee_id)
-                    ->where('leave_type_id', $application->leave_type_id)
-                    ->first();
+                $this->balances->consumePending(
+                    (int) $application->employee_id,
+                    (int) $application->leave_type_id,
+                    (float) $application->total_days
+                );
 
-                if ($balance) {
-                    $balance->decrement('pending', $application->total_days);
-                    $balance->increment('used', $application->total_days);
-                    $balance->decrement('balance', $application->total_days);
-                }
+                $application->recordStatus(LeaveApplication::STATUS_APPROVED, $approverEmployeeId, $remarks);
+            } else {
+                $application->recordStatus(
+                    LeaveApplication::STATUS_PENDING,
+                    $approverEmployeeId,
+                    trim("Step {$approvalStep->approval_order} approved. ".($remarks ?? ''))
+                );
             }
 
             return $application;
@@ -79,69 +91,76 @@ class LeaveApprovalService
     }
 
     /**
-     * Reject the leave application step and application.
+     * Reject the application and release the reserved days.
      */
     public function reject(LeaveApplication $application, int $approverEmployeeId, string $remarks): LeaveApplication
     {
         return DB::transaction(function () use ($application, $approverEmployeeId, $remarks) {
+            $application = $this->lockApplication($application);
             $approvalStep = $this->getPendingStepForApprover($application, $approverEmployeeId);
 
-            // 1. Mark current step as rejected
             $approvalStep->update([
-                'status' => 'rejected',
+                'status' => LeaveApplicationApproval::STATUS_REJECTED,
                 'acted_at' => now(),
                 'remarks' => $remarks,
             ]);
 
-            // 2. Reject main application
+            // Later steps will never be reached.
+            $application->approvals()
+                ->where('status', LeaveApplicationApproval::STATUS_PENDING)
+                ->update(['status' => LeaveApplicationApproval::STATUS_SKIPPED]);
+
             $application->update([
-                'status' => 'rejected',
+                'status' => LeaveApplication::STATUS_REJECTED,
                 'rejected_at' => now(),
             ]);
 
-            // 3. Revert Pending Balance
-            $balance = EmployeeLeaveBalance::where('employee_id', $application->employee_id)
-                ->where('leave_type_id', $application->leave_type_id)
-                ->first();
+            $this->balances->releasePending(
+                (int) $application->employee_id,
+                (int) $application->leave_type_id,
+                (float) $application->total_days
+            );
 
-            if ($balance && $balance->pending >= $application->total_days) {
-                $balance->decrement('pending', $application->total_days);
-            }
+            $application->recordStatus(LeaveApplication::STATUS_REJECTED, $approverEmployeeId, $remarks);
 
             return $application;
         });
     }
 
     /**
-     * Return application to employee for revision/resubmission.
+     * Send the application back to the employee for correction. The step
+     * stays pending, so the same approver acts again after resubmission.
      */
     public function return(LeaveApplication $application, int $approverEmployeeId, string $remarks): LeaveApplication
     {
         return DB::transaction(function () use ($application, $approverEmployeeId, $remarks) {
+            $application = $this->lockApplication($application);
             $approvalStep = $this->getPendingStepForApprover($application, $approverEmployeeId);
 
-            // 1. Log remarks on step
             $approvalStep->update([
                 'acted_at' => now(),
                 'remarks' => $remarks,
             ]);
 
-            // 2. Set application status to returned
             $application->update([
-                'status' => 'returned',
+                'status' => LeaveApplication::STATUS_RETURNED,
             ]);
 
-            // 3. Revert pending balance
-            $balance = EmployeeLeaveBalance::where('employee_id', $application->employee_id)
-                ->where('leave_type_id', $application->leave_type_id)
-                ->first();
+            $this->balances->releasePending(
+                (int) $application->employee_id,
+                (int) $application->leave_type_id,
+                (float) $application->total_days
+            );
 
-            if ($balance && $balance->pending >= $application->total_days) {
-                $balance->decrement('pending', $application->total_days);
-            }
+            $application->recordStatus(LeaveApplication::STATUS_RETURNED, $approverEmployeeId, $remarks);
 
             return $application;
         });
+    }
+
+    protected function lockApplication(LeaveApplication $application): LeaveApplication
+    {
+        return LeaveApplication::whereKey($application->id)->lockForUpdate()->firstOrFail();
     }
 
     /**
@@ -149,7 +168,7 @@ class LeaveApprovalService
      */
     protected function getPendingStepForApprover(LeaveApplication $application, int $approverEmployeeId): LeaveApplicationApproval
     {
-        if ($application->status !== 'pending') {
+        if ($application->status !== LeaveApplication::STATUS_PENDING) {
             throw ValidationException::withMessages([
                 'application' => ['This leave application is no longer pending.'],
             ]);
@@ -157,11 +176,12 @@ class LeaveApprovalService
 
         // Retrieve current active pending step (lowest approval_order that is pending)
         $currentPendingStep = $application->approvals()
-            ->where('status', 'pending')
+            ->where('status', LeaveApplicationApproval::STATUS_PENDING)
             ->orderBy('approval_order', 'asc')
+            ->lockForUpdate()
             ->first();
 
-        if (!$currentPendingStep || (int) $currentPendingStep->approver_id !== $approverEmployeeId) {
+        if (! $currentPendingStep || (int) $currentPendingStep->approver_id !== $approverEmployeeId) {
             throw ValidationException::withMessages([
                 'approval' => ['You are not authorized to act on this step or it is not your turn in the approval sequence.'],
             ]);

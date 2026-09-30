@@ -17,17 +17,17 @@ class LeaveBalanceService
 
         return EmployeeLeaveBalance::with([
             'employee:id,emp_first_name,emp_last_name,employee_number',
-            'leaveType:id,name,code'
+            'leaveType:id,name,code',
         ])
-            ->when(!empty($filters['search']), function ($query) use ($filters) {
+            ->when(! empty($filters['search']), function ($query) use ($filters) {
                 $query->whereHas('employee', function ($q) use ($filters) {
                     $q->where('emp_first_name', 'like', "%{$filters['search']}%")
                         ->orWhere('emp_last_name', 'like', "%{$filters['search']}%")
                         ->orWhere('employee_number', 'like', "%{$filters['search']}%");
                 });
             })
-            ->when(!empty($filters['leave_type_id']), fn($q) => $q->where('leave_type_id', $filters['leave_type_id']))
-            ->when($year, fn($q) => $q->whereYear('as_of_date', $year))
+            ->when(! empty($filters['leave_type_id']), fn ($q) => $q->where('leave_type_id', $filters['leave_type_id']))
+            ->when($year, fn ($q) => $q->whereYear('as_of_date', $year))
             ->orderBy('id', 'desc')
             ->paginate($perPage)
             ->withQueryString();
@@ -51,16 +51,24 @@ class LeaveBalanceService
     /**
      * Update an existing leave balance record.
      */
+    /**
+     * Restricted administrative overwrite (leave.balance.update). Normal
+     * corrections go through adjustBalance().
+     */
     public function updateBalance(EmployeeLeaveBalance $leaveBalance, array $data)
     {
-        $leaveBalance->update([
-            'balance' => $data['balance'],
-            'used' => $data['used'],
-            'pending' => $data['pending'],
-            'as_of_date' => $data['as_of_date'],
-        ]);
+        return DB::transaction(function () use ($leaveBalance, $data) {
+            $leaveBalance = EmployeeLeaveBalance::lockForUpdate()->findOrFail($leaveBalance->id);
 
-        return $leaveBalance;
+            $leaveBalance->update([
+                'balance' => $data['balance'],
+                'used' => $data['used'],
+                'pending' => $data['pending'],
+                'as_of_date' => $data['as_of_date'],
+            ]);
+
+            return $leaveBalance;
+        });
     }
 
     /**

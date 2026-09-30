@@ -5,10 +5,31 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class LeaveApplication extends Model
 {
     use HasFactory;
+
+    public const STATUS_PENDING = 'pending';
+
+    public const STATUS_APPROVED = 'approved';
+
+    public const STATUS_REJECTED = 'rejected';
+
+    public const STATUS_RETURNED = 'returned';
+
+    public const STATUS_CANCELLED = 'cancelled';
+
+    /**
+     * Statuses in which nobody can act on the application any more.
+     */
+    public const TERMINAL_STATUSES = [self::STATUS_REJECTED, self::STATUS_CANCELLED];
+
+    /**
+     * Statuses that close the conversation (no more comments or attachments).
+     */
+    public const FINAL_STATUSES = [self::STATUS_APPROVED, self::STATUS_REJECTED, self::STATUS_CANCELLED];
 
     protected $fillable = [
         'employee_id',
@@ -65,5 +86,50 @@ class LeaveApplication extends Model
     public function approvals()
     {
         return $this->hasMany(LeaveApplicationApproval::class);
+    }
+
+    public function comments(): HasMany
+    {
+        return $this->hasMany(LeaveApplicationComment::class);
+    }
+
+    public function statusHistories(): HasMany
+    {
+        return $this->hasMany(LeaveApplicationStatusHistory::class);
+    }
+
+    /**
+     * The approval step that has to be acted on next (lowest pending order).
+     */
+    public function currentApproval(): ?LeaveApplicationApproval
+    {
+        return $this->approvals()
+            ->where('status', LeaveApplicationApproval::STATUS_PENDING)
+            ->orderBy('approval_order')
+            ->first();
+    }
+
+    /**
+     * Append a row to the status history (acted_by is an employee id).
+     */
+    public function recordStatus(string $status, ?int $actedBy, ?string $remarks = null): LeaveApplicationStatusHistory
+    {
+        return $this->statusHistories()->create([
+            'status' => $status,
+            'acted_by' => $actedBy,
+            'acted_at' => now(),
+            'remarks' => $remarks,
+        ]);
+    }
+
+    public function isOwnedBy(?int $employeeId): bool
+    {
+        return $employeeId !== null && (int) $this->employee_id === $employeeId;
+    }
+
+    public function hasApprover(?int $employeeId): bool
+    {
+        return $employeeId !== null
+            && $this->approvals()->where('approver_id', $employeeId)->exists();
     }
 }

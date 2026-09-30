@@ -3,128 +3,147 @@
 namespace App\Policies;
 
 use App\Models\LeaveApplication;
+use App\Models\LeaveApplicationApproval;
 use App\Models\User;
 
+/**
+ * Record-level authorization for leave applications.
+ *
+ * Capability permissions (spatie) say what kind of action a user may take;
+ * this policy adds whose application it is, who the assigned approvers are,
+ * and whether the application's state still allows the action.
+ * Role names are never checked here.
+ */
 class LeaveApplicationPolicy
 {
     /**
-     * Determine whether the user can view the model.
+     * Owner, an approver assigned to this application, or HR with leave.view.
      */
-    public function view(User $user, LeaveApplication $leave): bool
+    public function view(User $user, LeaveApplication $application): bool
     {
-        return LeaveApplication::visibleTo($user)
-            ->where('id', $leave->id)
+        if ($user->can('leave.view')) {
+            return true;
+        }
+
+        if ($application->isOwnedBy($user->employee_id) && $user->can('leave.view_own')) {
+            return true;
+        }
+
+        return $user->can('leave.approval.view')
+            && $application->hasApprover($user->employee_id);
+    }
+
+    /**
+     * Attachments, comments and status history follow the same rule as view.
+     */
+    public function viewAttachments(User $user, LeaveApplication $application): bool
+    {
+        return $this->view($user, $application);
+    }
+
+    /**
+     * Returned applications can always be corrected. Pending ones only until
+     * the first approver has signed off, so nobody approves content that
+     * changes afterwards.
+     */
+    public function update(User $user, LeaveApplication $application): bool
+    {
+        if (! $this->isEditable($application)) {
+            return false;
+        }
+
+        if ($application->isOwnedBy($user->employee_id) && $user->can('leave.update_own')) {
+            return true;
+        }
+
+        return $user->can('leave.update');
+    }
+
+    /**
+     * Owners can withdraw their own pending/returned requests. Cancelling an
+     * approved application reverses used balance, so it needs leave.cancel.
+     */
+    public function cancel(User $user, LeaveApplication $application): bool
+    {
+        if (in_array($application->status, LeaveApplication::TERMINAL_STATUSES, true)) {
+            return false;
+        }
+
+        $withdrawable = in_array($application->status, [
+            LeaveApplication::STATUS_PENDING,
+            LeaveApplication::STATUS_RETURNED,
+        ], true);
+
+        if ($withdrawable && $application->isOwnedBy($user->employee_id) && $user->can('leave.cancel_own')) {
+            return true;
+        }
+
+        return $user->can('leave.cancel');
+    }
+
+    /**
+     * Owner and assigned approvers, while the application is still open.
+     */
+    public function comment(User $user, LeaveApplication $application): bool
+    {
+        if (in_array($application->status, LeaveApplication::FINAL_STATUSES, true)) {
+            return false;
+        }
+
+        if ($application->isOwnedBy($user->employee_id) && $user->can('leave.view_own')) {
+            return true;
+        }
+
+        return $user->can('leave.approval.view')
+            && $application->hasApprover($user->employee_id);
+    }
+
+    public function approve(User $user, LeaveApplication $application): bool
+    {
+        return $this->canActOnCurrentStep($user, $application, 'leave.approval.approve');
+    }
+
+    public function reject(User $user, LeaveApplication $application): bool
+    {
+        return $this->canActOnCurrentStep($user, $application, 'leave.approval.reject');
+    }
+
+    public function return(User $user, LeaveApplication $application): bool
+    {
+        return $this->canActOnCurrentStep($user, $application, 'leave.approval.return');
+    }
+
+    /**
+     * Having the capability is not enough: the user must be the approver on
+     * the lowest pending step of this particular application.
+     */
+    private function canActOnCurrentStep(User $user, LeaveApplication $application, string $permission): bool
+    {
+        if (! $user->can($permission) || $user->employee_id === null) {
+            return false;
+        }
+
+        if ($application->status !== LeaveApplication::STATUS_PENDING) {
+            return false;
+        }
+
+        $current = $application->currentApproval();
+
+        return $current !== null && (int) $current->approver_id === (int) $user->employee_id;
+    }
+
+    private function isEditable(LeaveApplication $application): bool
+    {
+        if ($application->status === LeaveApplication::STATUS_RETURNED) {
+            return true;
+        }
+
+        if ($application->status !== LeaveApplication::STATUS_PENDING) {
+            return false;
+        }
+
+        return ! $application->approvals()
+            ->where('status', '!=', LeaveApplicationApproval::STATUS_PENDING)
             ->exists();
     }
-
-    /**
-     * Determine whether the user can recommend leave.
-     */
-    public function recommend(User $user, LeaveApplication $leave): bool
-    {
-        if ($leave->currentStatus?->status !== 'pending') {
-            return false;
-        }
-
-        if (!$user->employee) {
-            return false;
-        }
-
-        return $leave->employee->immediate_supervisor_id === $user->employee->id;
-    }
-
-    /**
-     * Determine whether the user can certify the leave.
-     */
-    public function certify(User $user, LeaveApplication $leave): bool
-    {
-        $allowedStatuses = ['for approval', 'for disapproval'];
-
-        if (!in_array($leave->currentStatus?->status, $allowedStatuses)) {
-            return false;
-        }
-
-        return $user->hasAnyRole([
-            'campus_hr',
-            'campus_hr_staff',
-            'hr_director'
-        ]);
-    }
-
-    /**
-     * Determine whether the user can approve the leave.
-     */
-    public function approve(User $user, LeaveApplication $leave): bool
-    {
-        // Must be certified first
-        if ($leave->currentStatus?->status !== 'certified') {
-            return false;
-        }
-
-        $employee = $user->employee;
-
-        if (!$employee) {
-            return false;
-        }
-
-        // Get designations
-        $designations = $employee->employeeDesignations
-            ->pluck('designation.name')
-            ->map(fn($name) => strtolower(trim($name)))
-            ->toArray();
-
-        // Compute total credits
-        $totalCredits = $leave->leaveDates->sum('credits');
-
-        $isPresident = in_array('university president', $designations);
-
-        $isHead = count(array_intersect($designations, [
-            'chancellor',
-            'executive director',
-        ])) > 0;
-
-        // ≥ 30 days → ONLY UNIVERSITY PRESIDENT
-        if ($totalCredits >= 30) {
-            return $isPresident;
-        }
-
-        // < 30 days → HEADS OR UNIVERSITY PRESIDENT
-        if ($totalCredits < 30) {
-            return $isPresident || $isHead;
-        }
-
-        return false;
-    }
-
-    public function cancel(User $user, LeaveApplication $leave): bool
-    {
-        $employee = $user->employee;
-
-        $status = strtolower($leave->currentStatus?->status ?? '');
-
-        // ❌ FINAL STATES: cannot cancel anymore
-        if (in_array($status, ['cancelled', 'disapproved'])) {
-            return false;
-        }
-
-        // ✅ Applicant can cancel their own leave
-        if ($employee && $leave->employee_id === $employee->id) {
-            return true;
-        }
-
-        // ✅ HR can cancel any non-final leave
-        if (
-            $user->hasAnyRole([
-                'superadmin',
-                'campus_hr',
-                'campus_hr_staff',
-                'hr_director'
-            ])
-        ) {
-            return true;
-        }
-
-        return false;
-    }
-
 }

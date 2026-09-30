@@ -6,22 +6,39 @@ use App\Models\Department;
 use App\Models\Employee;
 use App\Models\EmployeeLeaveBalance;
 use App\Models\LeaveApplication;
+use App\Models\LeaveApplicationApproval;
+use App\Models\LeaveApplicationAttachment;
+use App\Models\LeaveApplicationComment;
 use App\Models\LeaveApplicationDate;
 use App\Models\LeaveType;
+use App\Models\User;
 use Carbon\Carbon;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 
 class LeaveApplicationService
 {
     protected LeavePolicyValidator $policyValidator;
 
-    public function __construct(?LeavePolicyValidator $policyValidator = null)
-    {
+    protected LeaveBalanceMovementService $balances;
+
+    protected LeaveApprovalWorkflowResolver $workflowResolver;
+
+    public function __construct(
+        ?LeavePolicyValidator $policyValidator = null,
+        ?LeaveBalanceMovementService $balances = null,
+        ?LeaveApprovalWorkflowResolver $workflowResolver = null,
+    ) {
         $this->policyValidator = $policyValidator ?? app(LeavePolicyValidator::class);
+        $this->balances = $balances ?? app(LeaveBalanceMovementService::class);
+        $this->workflowResolver = $workflowResolver ?? app(LeaveApprovalWorkflowResolver::class);
     }
+
     /**
      * Get paginated active applications for a specific employee.
      */
@@ -29,8 +46,8 @@ class LeaveApplicationService
     {
         return LeaveApplication::with(['leaveType:id,name,code', 'dates', 'attachments'])
             ->where('employee_id', $employeeId)
-            ->when(!empty($filters['status']), fn($q) => $q->where('status', $filters['status']))
-            ->when(!empty($filters['leave_type_id']), fn($q) => $q->where('leave_type_id', $filters['leave_type_id']))
+            ->when(! empty($filters['status']), fn ($q) => $q->where('status', $filters['status']))
+            ->when(! empty($filters['leave_type_id']), fn ($q) => $q->where('leave_type_id', $filters['leave_type_id']))
             ->orderBy('id', 'desc')
             ->paginate($perPage)
             ->withQueryString();
@@ -53,14 +70,15 @@ class LeaveApplicationService
             'employee:id,emp_first_name,emp_last_name',
             'employee.user:id',
             'leaveType:id,name,code',
-            'dates'
+            'dates',
         ])
             ->whereIn('status', ['pending', 'approved'])
-            ->whereHas('employee', function ($q) use ($departmentIds) {
-                if (!empty($departmentIds)) {
-                    $q->whereIn('department_id', $departmentIds);
-                }
-            })
+            // Without a department there is no team to show, only the employee's own leave.
+            ->when(
+                empty($departmentIds),
+                fn ($q) => $q->where('employee_id', $employeeId),
+                fn ($q) => $q->whereHas('employee', fn ($e) => $e->whereIn('department_id', $departmentIds))
+            )
             ->whereHas('dates', function ($q) use ($startDate, $endDate) {
                 $q->whereBetween('leave_date', [$startDate, $endDate]);
             })
@@ -69,12 +87,12 @@ class LeaveApplicationService
                 $emp = $application->employee;
 
                 // Resolve employee full name
-                $fullName = trim(($emp?->emp_first_name ?? '') . ' ' . ($emp?->emp_last_name ?? ''));
+                $fullName = trim(($emp?->emp_first_name ?? '').' '.($emp?->emp_last_name ?? ''));
                 if (empty($fullName) && $emp?->user) {
                     $fullName = $emp->user->name;
                 }
                 if (empty($fullName)) {
-                    $fullName = 'Employee #' . $application->employee_id;
+                    $fullName = 'Employee #'.$application->employee_id;
                 }
 
                 return $application->dates->map(function ($date) use ($application, $employeeId, $fullName) {
@@ -107,11 +125,11 @@ class LeaveApplicationService
         $departmentIds = [$departmentId];
         $parentsToCheck = [$departmentId];
 
-        while (!empty($parentsToCheck)) {
+        while (! empty($parentsToCheck)) {
             $children = $departments->whereIn('parent_id', $parentsToCheck);
             $parentsToCheck = $children->pluck('id')->toArray();
 
-            if (!empty($parentsToCheck)) {
+            if (! empty($parentsToCheck)) {
                 $departmentIds = array_merge($departmentIds, $parentsToCheck);
             }
         }
@@ -127,8 +145,8 @@ class LeaveApplicationService
         return LeaveApplication::with(['leaveType:id,name,code', 'dates', 'attachments'])
             ->where('employee_id', $employeeId)
             ->whereIn('status', ['approved', 'rejected', 'cancelled'])
-            ->when(!empty($filters['status']), fn($q) => $q->where('status', $filters['status']))
-            ->when(!empty($filters['leave_type_id']), fn($q) => $q->where('leave_type_id', $filters['leave_type_id']))
+            ->when(! empty($filters['status']), fn ($q) => $q->where('status', $filters['status']))
+            ->when(! empty($filters['leave_type_id']), fn ($q) => $q->where('leave_type_id', $filters['leave_type_id']))
             ->orderBy('id', 'desc')
             ->paginate($perPage)
             ->withQueryString();
@@ -145,121 +163,177 @@ class LeaveApplicationService
     }
 
     /**
-     * Create a new leave application with date breakdowns and attachments.
+     * File a new leave application.
+     *
+     * Validation, balance reservation and approval assignment all happen in
+     * one transaction on the locked balance row. Applications that need
+     * approval get their approvers resolved from the workflow right away.
      */
     public function createApplication(int $employeeId, array $data, array $dates, array $files = []): LeaveApplication
     {
-        // 1. Run Policy Rule Validation
-        $rule = $this->policyValidator->validate($employeeId, $data['leave_type_id'], $dates, $files);
+        $storedPaths = [];
 
-        // Determine if approval is required by the active rule
-        $requiresApproval = $rule ? $rule->requires_approval : true;
-        $initialStatus = $requiresApproval ? 'pending' : 'approved';
+        try {
+            return DB::transaction(function () use ($employeeId, $data, $dates, $files, &$storedPaths) {
+                $leaveTypeId = (int) $data['leave_type_id'];
 
-        return DB::transaction(function () use ($employeeId, $data, $dates, $files, $initialStatus, $requiresApproval) {
-            $calculatedTotals = $this->calculateTotals($dates);
+                $this->balances->lock($employeeId, $leaveTypeId);
+                $rule = $this->policyValidator->validate($employeeId, $leaveTypeId, $dates, $files);
 
-            // 2. Create main application record
-            $application = LeaveApplication::create([
-                'employee_id' => $employeeId,
-                'leave_type_id' => $data['leave_type_id'],
-                'reason' => $data['reason'] ?? null,
-                'total_days' => $calculatedTotals['total_days'],
-                'total_hours' => $calculatedTotals['total_hours'],
-                'status' => $initialStatus,
-                'submitted_at' => now(),
-            ]);
+                $requiresApproval = $rule ? $rule->requires_approval : true;
+                $calculatedTotals = $this->calculateTotals($dates);
 
-            // 3. Attach application dates
-            foreach ($dates as $dateItem) {
-                $dayFraction = $this->getDayFraction($dateItem['duration_type'], $dateItem['hours'] ?? null);
-                $hours = $this->getHours($dateItem['duration_type'], $dateItem['hours'] ?? null);
-
-                $application->dates()->create([
-                    'leave_date' => $dateItem['leave_date'],
-                    'duration_type' => $dateItem['duration_type'],
-                    'hours' => $hours,
-                    'day_fraction' => $dayFraction,
-                    'start_time' => $dateItem['start_time'] ?? null,
-                    'end_time' => $dateItem['end_time'] ?? null,
-                    'is_paid' => $dateItem['is_paid'] ?? true,
+                $application = LeaveApplication::create([
+                    'employee_id' => $employeeId,
+                    'leave_type_id' => $leaveTypeId,
+                    'reason' => $data['reason'] ?? null,
+                    'total_days' => $calculatedTotals['total_days'],
+                    'total_hours' => $calculatedTotals['total_hours'],
+                    'status' => $requiresApproval ? LeaveApplication::STATUS_PENDING : LeaveApplication::STATUS_APPROVED,
+                    'submitted_at' => now(),
+                    'approved_at' => $requiresApproval ? null : now(),
                 ]);
-            }
 
-            // 4. Upload attachments
-            if (!empty($files)) {
-                $this->uploadAttachments($application, $files, $employeeId);
-            }
+                $this->syncDates($application, $dates);
 
-            // 5. Update Employee Leave Balance counters
-            $balance = EmployeeLeaveBalance::where('employee_id', $employeeId)
-                ->where('leave_type_id', $data['leave_type_id'])
-                ->first();
-
-            if ($balance) {
                 if ($requiresApproval) {
-                    $balance->increment('pending', $calculatedTotals['total_days']);
+                    $this->workflowResolver->createApprovals($application, $rule);
+                    $this->balances->reservePending($employeeId, $leaveTypeId, $calculatedTotals['total_days']);
+                    $application->recordStatus(LeaveApplication::STATUS_PENDING, $employeeId, 'Submitted');
                 } else {
-                    $balance->increment('used', $calculatedTotals['total_days']);
-                    $balance->decrement('balance', $calculatedTotals['total_days']);
+                    $this->balances->consumeDirectly($employeeId, $leaveTypeId, $calculatedTotals['total_days']);
+                    $application->recordStatus(LeaveApplication::STATUS_APPROVED, $employeeId, 'Approved automatically: this leave type does not require approval.');
                 }
-            }
 
-            return $application;
-        });
+                $storedPaths = $this->uploadAttachments($application, $files, $employeeId);
+
+                return $application;
+            });
+        } catch (\Throwable $e) {
+            $this->deleteStoredFiles($storedPaths);
+
+            throw $e;
+        }
     }
 
     /**
-     * Update an existing pending leave application.
+     * Edit a pending application, or correct and resubmit a returned one.
+     *
+     * Approval instances are not touched: they were fixed at submission.
+     * A resubmitted application continues at the step that returned it.
      */
-    public function updateApplication(LeaveApplication $application, array $data, array $dates, array $files = []): LeaveApplication
+    public function updateApplication(LeaveApplication $application, array $data, array $dates, array $files = [], ?int $actorEmployeeId = null): LeaveApplication
     {
-        // Run Policy Rule Validation
-        $this->policyValidator->validate($application->employee_id, $data['leave_type_id'], $dates, $files);
+        $storedPaths = [];
 
-        return DB::transaction(function () use ($application, $data, $dates, $files) {
-            $oldTotalDays = $application->total_days;
-            $calculatedTotals = $this->calculateTotals($dates);
+        try {
+            return DB::transaction(function () use ($application, $data, $dates, $files, $actorEmployeeId, &$storedPaths) {
+                $application = LeaveApplication::whereKey($application->id)->lockForUpdate()->firstOrFail();
+                $this->ensureEditable($application);
 
-            $application->update([
-                'leave_type_id' => $data['leave_type_id'],
-                'reason' => $data['reason'] ?? null,
-                'total_days' => $calculatedTotals['total_days'],
-                'total_hours' => $calculatedTotals['total_hours'],
-            ]);
+                $employeeId = (int) $application->employee_id;
+                $oldTypeId = (int) $application->leave_type_id;
+                $newTypeId = (int) $data['leave_type_id'];
+                $wasReturned = $application->status === LeaveApplication::STATUS_RETURNED;
 
-            $application->dates()->delete();
-            foreach ($dates as $dateItem) {
-                $application->dates()->create([
-                    'leave_date' => $dateItem['leave_date'],
-                    'duration_type' => $dateItem['duration_type'],
-                    'hours' => $this->getHours($dateItem['duration_type'], $dateItem['hours'] ?? null),
-                    'day_fraction' => $this->getDayFraction($dateItem['duration_type'], $dateItem['hours'] ?? null),
-                    'start_time' => $dateItem['start_time'] ?? null,
-                    'end_time' => $dateItem['end_time'] ?? null,
-                    'is_paid' => $dateItem['is_paid'] ?? true,
-                ]);
-            }
+                $this->balances->lock($employeeId, $oldTypeId);
+                $this->balances->lock($employeeId, $newTypeId);
+                $this->policyValidator->validate($employeeId, $newTypeId, $dates, $files, $application);
 
-            if (!empty($files)) {
-                $this->uploadAttachments($application, $files, $application->employee_id);
-            }
+                $calculatedTotals = $this->calculateTotals($dates);
 
-            $balance = EmployeeLeaveBalance::where('employee_id', $application->employee_id)
-                ->where('leave_type_id', $data['leave_type_id'])
-                ->first();
-
-            if ($balance) {
-                $diff = $calculatedTotals['total_days'] - $oldTotalDays;
-                if ($diff > 0) {
-                    $balance->increment('pending', $diff);
-                } elseif ($diff < 0) {
-                    $balance->decrement('pending', abs($diff));
+                // A returned application already gave its reservation back.
+                if (! $wasReturned) {
+                    $this->balances->releasePending($employeeId, $oldTypeId, (float) $application->total_days);
                 }
-            }
 
-            return $application;
-        });
+                $application->update([
+                    'leave_type_id' => $newTypeId,
+                    'reason' => $data['reason'] ?? null,
+                    'total_days' => $calculatedTotals['total_days'],
+                    'total_hours' => $calculatedTotals['total_hours'],
+                    'status' => LeaveApplication::STATUS_PENDING,
+                ]);
+
+                $application->dates()->delete();
+                $this->syncDates($application, $dates);
+
+                $this->balances->reservePending($employeeId, $newTypeId, $calculatedTotals['total_days']);
+
+                if ($wasReturned) {
+                    $application->recordStatus(LeaveApplication::STATUS_PENDING, $actorEmployeeId, 'Resubmitted after correction');
+                }
+
+                $storedPaths = $this->uploadAttachments($application, $files, $actorEmployeeId ?? $employeeId);
+
+                return $application;
+            });
+        } catch (\Throwable $e) {
+            $this->deleteStoredFiles($storedPaths);
+
+            throw $e;
+        }
+    }
+
+    /**
+     * Add a comment. Authorization (owner/assigned approver, open status) is the policy's job.
+     */
+    public function addComment(LeaveApplication $application, int $commenterEmployeeId, string $comment): LeaveApplicationComment
+    {
+        return $application->comments()->create([
+            'commenter_id' => $commenterEmployeeId,
+            'comment' => $comment,
+        ]);
+    }
+
+    /**
+     * Everything the detail page shows, in one load.
+     */
+    public function loadDetails(LeaveApplication $application): LeaveApplication
+    {
+        return $application->load([
+            'employee:id,emp_first_name,emp_last_name,employee_number,department_id,supervisor_id',
+            'employee.department:id,name',
+            'leaveType:id,name,code',
+            'dates' => fn ($q) => $q->orderBy('leave_date'),
+            'attachments',
+            'approvals' => fn ($q) => $q->orderBy('approval_order'),
+            'statusHistories' => fn ($q) => $q->orderBy('acted_at')->orderBy('id'),
+            'statusHistories.actor:id,emp_first_name,emp_last_name',
+            'comments' => fn ($q) => $q->orderBy('created_at')->orderBy('id'),
+            'comments.commenter:id,emp_first_name,emp_last_name',
+        ]);
+    }
+
+    protected function syncDates(LeaveApplication $application, array $dates): void
+    {
+        foreach ($dates as $dateItem) {
+            $application->dates()->create([
+                'leave_date' => $dateItem['leave_date'],
+                'duration_type' => $dateItem['duration_type'],
+                'hours' => $this->getHours($dateItem['duration_type'], $dateItem['hours'] ?? null),
+                'day_fraction' => $this->getDayFraction($dateItem['duration_type'], $dateItem['hours'] ?? null),
+                'start_time' => $dateItem['start_time'] ?? null,
+                'end_time' => $dateItem['end_time'] ?? null,
+                'is_paid' => $dateItem['is_paid'] ?? true,
+            ]);
+        }
+    }
+
+    /**
+     * Re-checked on the locked row, since the state may have changed after authorization.
+     */
+    protected function ensureEditable(LeaveApplication $application): void
+    {
+        $editable = $application->status === LeaveApplication::STATUS_RETURNED
+            || ($application->status === LeaveApplication::STATUS_PENDING
+                && ! $application->approvals()->where('status', '!=', LeaveApplicationApproval::STATUS_PENDING)->exists());
+
+        if (! $editable) {
+            throw ValidationException::withMessages([
+                'application' => ['This leave application can no longer be edited.'],
+            ]);
+        }
     }
 
     /**
@@ -274,7 +348,7 @@ class LeaveApplicationService
         }
 
         $leaveType = LeaveType::find($leaveTypeId);
-        if (!$leaveType) {
+        if (! $leaveType) {
             throw ValidationException::withMessages([
                 'leave_type_id' => 'The selected leave type is invalid.',
             ]);
@@ -306,7 +380,7 @@ class LeaveApplicationService
             ->where('leave_type_id', $leaveTypeId)
             ->first();
 
-        if (!$balance) {
+        if (! $balance) {
             throw ValidationException::withMessages([
                 'leave_type_id' => 'You do not have an active balance assigned for this leave type.',
             ]);
@@ -328,7 +402,7 @@ class LeaveApplicationService
         }
 
         // Rule 3: Advance Notice Requirement
-        if (!empty($leaveType->min_notice_days) && $leaveType->min_notice_days > 0) {
+        if (! empty($leaveType->min_notice_days) && $leaveType->min_notice_days > 0) {
             $earliestDate = collect($requestedDateStrings)->min();
             $noticeDays = now()->startOfDay()->diffInDays(Carbon::parse($earliestDate)->startOfDay(), false);
 
@@ -340,8 +414,8 @@ class LeaveApplicationService
         }
 
         // Rule 4: Mandatory Attachment Check
-        $hasAttachment = !empty($files);
-        if ($ignoreApplicationId && !$hasAttachment) {
+        $hasAttachment = ! empty($files);
+        if ($ignoreApplicationId && ! $hasAttachment) {
             $existingApp = LeaveApplication::find($ignoreApplicationId);
             $hasAttachment = $existingApp && $existingApp->attachments()->exists();
         }
@@ -351,7 +425,7 @@ class LeaveApplicationService
 
         if (
             ($requiresAttachment || ($attachmentMinDays && $requestedTotals['total_days'] >= $attachmentMinDays))
-            && !$hasAttachment
+            && ! $hasAttachment
         ) {
             throw ValidationException::withMessages([
                 'attachments' => "An attachment/document is required when requesting {$leaveType->name}.",
@@ -362,45 +436,86 @@ class LeaveApplicationService
     /**
      * Cancel a pending application.
      */
-    public function cancelApplication(LeaveApplication $application): LeaveApplication
+    /**
+     * Cancel an application on behalf of $actor.
+     *
+     * The caller's earlier authorization ran against a copy of the application
+     * that may be stale (e.g. an approver approved it in the meantime), so the
+     * cancel ability is evaluated again here against the locked row before
+     * anything changes.
+     *
+     * @throws AuthorizationException when $actor may not cancel it in its current state
+     */
+    public function cancelApplication(LeaveApplication $application, User $actor): LeaveApplication
     {
-        return DB::transaction(function () use ($application) {
+        return DB::transaction(function () use ($application, $actor) {
+            $application = LeaveApplication::whereKey($application->id)->lockForUpdate()->firstOrFail();
+
+            Gate::forUser($actor)->authorize('cancel', $application);
+
+            $employeeId = (int) $application->employee_id;
+            $leaveTypeId = (int) $application->leave_type_id;
+            $days = (float) $application->total_days;
+
+            match ($application->status) {
+                // Pending days are reserved: give the reservation back.
+                LeaveApplication::STATUS_PENDING => $this->balances->releasePending($employeeId, $leaveTypeId, $days),
+                // Approved days were used: restore used and balance.
+                LeaveApplication::STATUS_APPROVED => $this->balances->restoreUsed($employeeId, $leaveTypeId, $days),
+                // A returned application already released its reservation.
+                LeaveApplication::STATUS_RETURNED => null,
+                default => throw ValidationException::withMessages([
+                    'application' => ['This leave application can no longer be cancelled.'],
+                ]),
+            };
+
             $application->update([
-                'status' => 'cancelled',
+                'status' => LeaveApplication::STATUS_CANCELLED,
                 'cancelled_at' => now(),
             ]);
 
-            // Revert pending balance
-            $balance = EmployeeLeaveBalance::where('employee_id', $application->employee_id)
-                ->where('leave_type_id', $application->leave_type_id)
-                ->first();
+            // Steps nobody acted on will never be reached.
+            $application->approvals()
+                ->where('status', LeaveApplicationApproval::STATUS_PENDING)
+                ->update(['status' => LeaveApplicationApproval::STATUS_SKIPPED]);
 
-            if ($balance && $balance->pending >= $application->total_days) {
-                $balance->decrement('pending', $application->total_days);
-            }
+            $application->recordStatus(LeaveApplication::STATUS_CANCELLED, $actor->employee_id);
 
             return $application;
         });
     }
 
     /**
-     * Upload and store attachment files.
+     * Store attachments on the private disk. Returns the stored paths so the
+     * caller can clean them up if the transaction rolls back.
      */
-    protected function uploadAttachments(LeaveApplication $application, array $files, int $uploadedByEmployeeId): void
+    protected function uploadAttachments(LeaveApplication $application, array $files, ?int $uploadedByEmployeeId): array
     {
+        $paths = [];
+
         foreach ($files as $file) {
             if ($file instanceof UploadedFile) {
-                $path = $file->store('leave_attachments', 'public');
+                $path = $file->store('leave_attachments', LeaveApplicationAttachment::DISK);
+                $paths[] = $path;
 
                 $application->attachments()->create([
                     'file_path' => $path,
                     'file_name' => $file->getClientOriginalName(),
                     'mime_type' => $file->getClientMimeType(),
                     'file_size' => round($file->getSize() / 1024, 2), // KB
-                    'uploaded_by' => $uploadedByEmployeeId,
+                    'uploaded_by' => $uploadedByEmployeeId ?? $application->employee_id,
                     'uploaded_at' => now(),
                 ]);
             }
+        }
+
+        return $paths;
+    }
+
+    protected function deleteStoredFiles(array $paths): void
+    {
+        if (! empty($paths)) {
+            Storage::disk(LeaveApplicationAttachment::DISK)->delete($paths);
         }
     }
 

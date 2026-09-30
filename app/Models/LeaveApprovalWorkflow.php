@@ -4,6 +4,8 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class LeaveApprovalWorkflow extends Model
 {
@@ -17,13 +19,14 @@ class LeaveApprovalWorkflow extends Model
     ];
 
     protected $casts = [
+        'leave_policy_id' => 'integer',
         'is_active' => 'boolean',
     ];
 
     /**
-     * The leave policy this workflow belongs to.
+     * The leave policy this workflow belongs to (null = company-wide default).
      */
-    public function leavePolicy()
+    public function leavePolicy(): BelongsTo
     {
         return $this->belongsTo(LeavePolicy::class);
     }
@@ -31,9 +34,9 @@ class LeaveApprovalWorkflow extends Model
     /**
      * The approval steps in this workflow.
      */
-    public function steps()
+    public function steps(): HasMany
     {
         return $this->hasMany(LeaveApprovalWorkflowStep::class)
-            ->orderBy('approval_order');
+            ->orderBy('step_order');
     }
 }
