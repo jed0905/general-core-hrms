@@ -68,6 +68,7 @@ Route::middleware(['auth', 'verified'])->prefix('leave')->group(function () {
     Route::prefix('applications')->name('leave.applications.')->group(function () {
         Route::get('/', [LeaveApplicationController::class, 'index'])->name('index')->middleware('can:leave.view_own');
         Route::post('/', [LeaveApplicationController::class, 'store'])->name('store')->middleware('can:leave.create');
+        Route::get('/create', [LeaveApplicationController::class, 'create'])->name('create')->middleware('can:leave.create');
         Route::get('/my-balances', [LeaveApplicationController::class, 'myBalances'])->name('my-balances')->middleware('can:leave.view_balance_own');
         Route::get('/history', [LeaveApplicationController::class, 'history'])->name('history')->middleware('can:leave.view_history_own');
 

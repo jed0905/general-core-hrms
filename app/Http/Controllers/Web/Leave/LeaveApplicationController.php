@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Leave\StoreLeaveApplicationCommentRequest;
 use App\Http\Requests\Leave\StoreLeaveApplicationRequest;
 use App\Http\Requests\Leave\UpdateLeaveApplicationRequest;
+use App\Models\Employee;
 use App\Models\LeaveApplication;
 use App\Models\LeaveApplicationAttachment;
 use App\Models\LeaveType;
@@ -84,16 +85,50 @@ class LeaveApplicationController extends Controller
     }
 
     /**
-     * Balances and history are shown on the self-service index page.
+     * Entry point for "Apply Leave": the applications page opens its filing form.
      */
-    public function myBalances(): RedirectResponse
+    public function create(): RedirectResponse
     {
-        return redirect()->route('leave.applications.index');
+        return redirect()->route('leave.applications.index', ['apply' => 1]);
     }
 
-    public function history(): RedirectResponse
+    /**
+     * The user's own leave balances. There is no employee parameter: the
+     * employee is always users.employee_id.
+     */
+    public function myBalances(Request $request): Response
     {
-        return redirect()->route('leave.applications.index', ['view' => 'list']);
+        $employee = $request->user()->employee_id ? Employee::find($request->user()->employee_id) : null;
+
+        if ($employee) {
+            $this->authorize('viewLeaveBalance', $employee);
+        }
+
+        return Inertia::render('app/Leave/MyBalances/Index', [
+            'hasEmployeeRecord' => $employee !== null,
+            'balances' => $employee ? $this->service->getBalanceSummary($employee->id) : [],
+        ]);
+    }
+
+    /**
+     * The user's own decided applications (approved, rejected, cancelled).
+     */
+    public function history(Request $request): Response
+    {
+        $user = $request->user();
+        $filters = $request->only(['status', 'leave_type_id']);
+
+        return Inertia::render('app/Leave/MyHistory/Index', [
+            'hasEmployeeRecord' => $user->employee_id !== null,
+            'history' => $user->employee_id === null
+                ? new LengthAwarePaginator([], 0, 15)
+                : $this->service->getApplicationHistory($user->employee_id, $filters)
+                    ->through(fn (LeaveApplication $application) => array_merge($application->toArray(), [
+                        'can' => ['view' => $user->can('view', $application)],
+                    ])),
+            'leaveTypes' => LeaveType::select('id', 'name', 'code')->get(),
+            'filters' => $filters,
+        ]);
     }
 
     public function store(StoreLeaveApplicationRequest $request): RedirectResponse

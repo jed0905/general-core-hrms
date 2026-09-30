@@ -16,6 +16,7 @@ use Carbon\Carbon;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Storage;
@@ -155,6 +156,34 @@ class LeaveApplicationService
     /**
      * Fetch active leave balances for an employee.
      */
+    /**
+     * Self-service balance view; `available` comes from EmployeeLeaveBalance::available().
+     */
+    public function getBalanceSummary(int $employeeId): Collection
+    {
+        return $this->getEmployeeBalances($employeeId)->map(fn (EmployeeLeaveBalance $balance) => [
+            'id' => $balance->id,
+            'leave_type' => $balance->leaveType?->only(['id', 'name', 'code']),
+            'balance' => (float) $balance->balance,
+            'pending' => (float) $balance->pending,
+            'used' => (float) $balance->used,
+            'available' => $balance->available(),
+            'as_of_date' => $balance->as_of_date,
+        ])->values();
+    }
+
+    /**
+     * The employee's most recent applications, newest first.
+     */
+    public function getRecentApplications(int $employeeId, int $limit = 5): Collection
+    {
+        return LeaveApplication::with(['leaveType:id,name,code', 'dates' => fn ($q) => $q->orderBy('leave_date')])
+            ->where('employee_id', $employeeId)
+            ->orderByDesc('id')
+            ->limit($limit)
+            ->get();
+    }
+
     public function getEmployeeBalances(int $employeeId)
     {
         return EmployeeLeaveBalance::with('leaveType:id,name,code')

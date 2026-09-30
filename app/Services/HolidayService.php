@@ -3,28 +3,43 @@
 namespace App\Services;
 
 use App\Models\Holiday;
+use Carbon\CarbonInterface;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
 
 class HolidayService
 {
+    /**
+     * The active holiday falling on $date (exact date, or same month/day when recurring).
+     */
+    public function findForDate(CarbonInterface $date): ?Holiday
+    {
+        return Holiday::where('status', 'active')
+            ->where(fn ($q) => $q->whereDate('date', $date->toDateString())
+                ->orWhere(fn ($r) => $r->where('is_recurring', true)
+                    ->whereMonth('date', $date->month)
+                    ->whereDay('date', $date->day)))
+            ->orderByDesc('is_recurring')
+            ->first();
+    }
+
     public function getPaginatedHolidays(array $filters = [], int $perPage = 15): LengthAwarePaginator
     {
         return Holiday::query()
-            ->when(!empty($filters['search']), function ($query) use ($filters) {
+            ->when(! empty($filters['search']), function ($query) use ($filters) {
                 $search = $filters['search'];
                 $query->where(function ($q) use ($search) {
                     $q->where('name', 'like', "%{$search}%")
                         ->orWhere('code', 'like', "%{$search}%");
                 });
             })
-            ->when(!empty($filters['year']), function ($query) use ($filters) {
+            ->when(! empty($filters['year']), function ($query) use ($filters) {
                 $query->whereYear('date', $filters['year']);
             })
-            ->when(!empty($filters['type']), function ($query) use ($filters) {
+            ->when(! empty($filters['type']), function ($query) use ($filters) {
                 $query->where('type', $filters['type']);
             })
-            ->when(!empty($filters['status']), function ($query) use ($filters) {
+            ->when(! empty($filters['status']), function ($query) use ($filters) {
                 $query->where('status', $filters['status']);
             })
             ->orderBy('date', 'asc')

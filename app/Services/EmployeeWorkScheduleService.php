@@ -6,8 +6,10 @@ use App\Models\Department;
 use App\Models\Employee;
 use App\Models\EmployeeWorkSchedule;
 use App\Models\WorkSchedule;
+use Carbon\CarbonInterface;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
 class EmployeeWorkScheduleService
@@ -20,7 +22,7 @@ class EmployeeWorkScheduleService
                 'employee.department:id,name',
                 'workSchedule:id,name,code',
             ])
-            ->when(!empty($filters['search']), function ($query) use ($filters) {
+            ->when(! empty($filters['search']), function ($query) use ($filters) {
                 $search = $filters['search'];
                 $query->whereHas('employee', function ($q) use ($search) {
                     $q->where('emp_first_name', 'like', "%{$search}%")
@@ -28,10 +30,10 @@ class EmployeeWorkScheduleService
                         ->orWhere('employee_number', 'like', "%{$search}%");
                 });
             })
-            ->when(!empty($filters['work_schedule_id']), function ($query) use ($filters) {
+            ->when(! empty($filters['work_schedule_id']), function ($query) use ($filters) {
                 $query->where('work_schedule_id', $filters['work_schedule_id']);
             })
-            ->when(!empty($filters['department_id']), function ($query) use ($filters) {
+            ->when(! empty($filters['department_id']), function ($query) use ($filters) {
                 $query->whereHas('employee', function ($q) use ($filters) {
                     $q->where('department_id', $filters['department_id']);
                 });
@@ -42,6 +44,83 @@ class EmployeeWorkScheduleService
             ->latest('effective_from')
             ->paginate($perPage)
             ->withQueryString();
+    }
+
+    /**
+     * Every schedule assignment of one employee, newest first, with the
+     * weekly days and shifts. Callers pass an already-authorized employee.
+     */
+    public function getSchedulesForEmployee(Employee $employee): Collection
+    {
+        $today = now()->toDateString();
+
+        return EmployeeWorkSchedule::query()
+            ->where('employee_id', $employee->id)
+            ->with([
+                'workSchedule:id,name,code,description',
+                'workSchedule.days' => fn ($q) => $q->orderBy('day_of_week'),
+                'workSchedule.days.shift:id,name,code,start_time,end_time,break_start,break_end,required_hours,is_overnight,is_flexible',
+            ])
+            ->orderByDesc('effective_from')
+            ->get()
+            ->map(function (EmployeeWorkSchedule $assignment) use ($today) {
+                $assignment->setAttribute('is_current',
+                    $assignment->effective_from <= $today
+                    && ($assignment->effective_to === null || $assignment->effective_to >= $today)
+                );
+
+                return $assignment;
+            });
+    }
+
+    /**
+     * What an employee is scheduled to do on one date: the assignment in
+     * effect (primary first), that weekday's shift, and any holiday.
+     */
+    public function getDaySchedule(Employee $employee, CarbonInterface $date, ?HolidayService $holidays = null): array
+    {
+        $day = $date->toDateString();
+
+        $assignment = EmployeeWorkSchedule::query()
+            ->where('employee_id', $employee->id)
+            ->where('effective_from', '<=', $day)
+            ->where(fn ($q) => $q->whereNull('effective_to')->orWhere('effective_to', '>=', $day))
+            ->with(['workSchedule:id,name,code', 'workSchedule.days.shift:id,name,code,start_time,end_time,required_hours,is_overnight'])
+            ->orderByDesc('is_primary')
+            ->orderByDesc('effective_from')
+            ->first();
+
+        $scheduleDay = $assignment?->workSchedule?->days->firstWhere('day_of_week', $date->dayOfWeek);
+        $holiday = ($holidays ?? app(HolidayService::class))->findForDate($date);
+        $isWorkingDay = (bool) ($scheduleDay?->is_working_day && $scheduleDay?->shift)
+            && ! ($holiday && ! $holiday->is_working_day);
+
+        return [
+            'date' => $day,
+            'has_schedule' => $assignment !== null,
+            'schedule' => $assignment?->workSchedule?->only(['id', 'name', 'code']),
+            'is_working_day' => $isWorkingDay,
+            'shift' => $scheduleDay?->is_working_day ? $scheduleDay->shift?->only(['name', 'code', 'start_time', 'end_time', 'required_hours', 'is_overnight']) : null,
+            'holiday' => $holiday?->only(['name', 'type', 'is_working_day']),
+        ];
+    }
+
+    /**
+     * The first working day strictly after $from within $horizonDays, or null.
+     */
+    public function getNextWorkingDay(Employee $employee, CarbonInterface $from, int $horizonDays = 31): ?array
+    {
+        $holidays = app(HolidayService::class);
+
+        for ($i = 1; $i <= $horizonDays; $i++) {
+            $day = $this->getDaySchedule($employee, $from->copy()->addDays($i), $holidays);
+
+            if ($day['is_working_day']) {
+                return $day;
+            }
+        }
+
+        return null;
     }
 
     public function assignSchedules(array $data): void

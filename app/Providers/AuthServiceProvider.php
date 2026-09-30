@@ -3,7 +3,10 @@
 namespace App\Providers;
 
 // use Illuminate\Support\Facades\Gate;
+use App\Models\Employee;
 use App\Models\LeaveApplication;
+use App\Policies\EmployeePolicy;
+use App\Policies\LeaveApplicationPolicy;
 use Illuminate\Foundation\Support\Providers\AuthServiceProvider as ServiceProvider;
 use Laravel\Sanctum\Sanctum;
 
@@ -15,7 +18,8 @@ class AuthServiceProvider extends ServiceProvider
      * @var array<class-string, class-string>
      */
     protected $policies = [
-        LeaveApplication::class => \App\Policies\LeaveApplicationPolicy::class,
+        LeaveApplication::class => LeaveApplicationPolicy::class,
+        Employee::class => EmployeePolicy::class,
     ];
 
     /**

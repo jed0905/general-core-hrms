@@ -10,6 +10,7 @@ use App\Http\Controllers\Web\People\EmployeeExperienceController;
 use App\Http\Controllers\Web\People\EmployeePersonalController;
 use App\Http\Controllers\Web\People\EmploymentStatusController;
 use App\Http\Controllers\Web\People\JobTitleController;
+use App\Http\Controllers\Web\People\MyProfileController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware(['auth', 'verified'])->prefix('people/employees')->name('people.employee.')->group(function () {
@@ -162,4 +163,26 @@ Route::middleware(['auth', 'verified'])
         Route::patch('/{employmentStatus}/archive', [EmploymentStatusController::class, 'archive'])
             ->middleware('can:employment_status.archive')
             ->name('archive');
+    });
+
+/*
+|--------------------------------------------------------------------------
+| Employee Self-Service: My Profile
+|--------------------------------------------------------------------------
+|
+| Always the logged-in user's own employee record (users.employee_id).
+| There is no {employee} parameter, so another employee can't be targeted.
+|
+*/
+Route::middleware(['auth', 'verified'])
+    ->prefix('people/my-profile')
+    ->name('people.my-profile.')
+    ->group(function () {
+        Route::get('/', [MyProfileController::class, 'show'])
+            ->middleware('can:employee.view_own')
+            ->name('show');
+
+        Route::put('/', [MyProfileController::class, 'update'])
+            ->middleware('can:employee.update_own')
+            ->name('update');
     });

@@ -15,8 +15,16 @@ class EmployeeLeaveBalance extends Model
         'balance',
         'used',
         'pending',
-        'as_of_date'
+        'as_of_date',
     ];
+
+    /**
+     * Days that can still be filed: reserved (pending) days are not available.
+     */
+    public function available(): float
+    {
+        return round((float) $this->balance - (float) $this->pending, 2);
+    }
 
     public function employee()
     {

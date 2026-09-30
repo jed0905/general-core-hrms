@@ -8,16 +8,35 @@ use App\Models\LeaveApplication;
 use App\Models\LeaveType;
 use App\Models\Location;
 use App\Models\User;
-use App\Models\AttendanceDevice;
+use App\Services\EmployeeDashboardService;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
+use Inertia\Response;
 
 class DashboardController extends Controller
 {
+    public function __construct(protected EmployeeDashboardService $employeeDashboard) {}
+
     /**
-     * Display the HRMS dashboard.
+     * One dashboard route, chosen by capability (never by role name):
+     * dashboard.hr.view gets the organization-wide HR dashboard, everyone
+     * else the self-service dashboard about their own employee record.
+     * HR data is only computed on the HR branch.
      */
-    public function index()
+    public function index(Request $request): Response
+    {
+        if ($request->user()->can('dashboard.hr.view')) {
+            return $this->hrDashboard();
+        }
+
+        return Inertia::render('app/Dashboard/MyDashboard/Index', $this->employeeDashboard->build($request->user()));
+    }
+
+    /**
+     * The organization-wide HR dashboard (unchanged).
+     */
+    private function hrDashboard(): Response
     {
         /*
         |--------------------------------------------------------------------------
@@ -38,7 +57,6 @@ class DashboardController extends Controller
                 ->where('status', 'active')
                 ->count(),
         ];
-
 
         /*
         |--------------------------------------------------------------------------
@@ -70,7 +88,6 @@ class DashboardController extends Controller
             ->orderByDesc('employee_count')
             ->get();
 
-
         /*
         |--------------------------------------------------------------------------
         | EMPLOYEES BY DEPARTMENT
@@ -100,7 +117,6 @@ class DashboardController extends Controller
             )
             ->orderByDesc('employee_count')
             ->get();
-
 
         /*
         |--------------------------------------------------------------------------
@@ -136,7 +152,6 @@ class DashboardController extends Controller
             ->orderByDesc('employee_count')
             ->get();
 
-
         /*
         |--------------------------------------------------------------------------
         | EMPLOYEES BY JOB TITLE
@@ -167,7 +182,6 @@ class DashboardController extends Controller
             ->orderByDesc('employee_count')
             ->limit(10)
             ->get();
-
 
         /*
         |--------------------------------------------------------------------------
@@ -231,7 +245,6 @@ class DashboardController extends Controller
             ->distinct('leave_applications.employee_id')
             ->count('leave_applications.employee_id');
 
-
         /*
         |--------------------------------------------------------------------------
         | PENDING LEAVE APPLICATIONS
@@ -241,7 +254,6 @@ class DashboardController extends Controller
         $pendingApplications = LeaveApplication::query()
             ->where('status', 'pending')
             ->count();
-
 
         /*
         |--------------------------------------------------------------------------
@@ -258,7 +270,6 @@ class DashboardController extends Controller
                 ]
             )
             ->count();
-
 
         /*
         |--------------------------------------------------------------------------
@@ -293,7 +304,6 @@ class DashboardController extends Controller
             ->orderByDesc('total')
             ->get();
 
-
         /*
         |--------------------------------------------------------------------------
         | LEAVE SUMMARY OBJECT
@@ -313,10 +323,9 @@ class DashboardController extends Controller
 
             'typeValues' => $leaveTypeData
                 ->pluck('total')
-                ->map(fn($value) => (int) $value)
+                ->map(fn ($value) => (int) $value)
                 ->values(),
         ];
-
 
         /*
         |--------------------------------------------------------------------------
@@ -376,7 +385,6 @@ class DashboardController extends Controller
             ],
         ];
 
-
         $setupCompleted = collect($setupItems)
             ->where('completed', true)
             ->count();
@@ -387,7 +395,6 @@ class DashboardController extends Controller
             ? round(($setupCompleted / $setupTotal) * 100)
             : 0;
 
-
         $setupProgress = [
             'percentage' => $setupPercentage,
 
@@ -397,7 +404,6 @@ class DashboardController extends Controller
 
             'items' => $setupItems,
         ];
-
 
         /*
         |--------------------------------------------------------------------------
@@ -410,7 +416,6 @@ class DashboardController extends Controller
         */
 
         $recentActivities = [];
-
 
         /*
         |--------------------------------------------------------------------------
@@ -444,7 +449,6 @@ class DashboardController extends Controller
             'recentActivities' => $recentActivities,
         ]);
     }
-
 
     /**
      * Determine whether the organization profile has been configured.

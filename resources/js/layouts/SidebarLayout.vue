@@ -70,7 +70,14 @@
                 v-for="(item, itemIndex) in group.items"
                 :key="itemIndex"
               >
+                <v-list-subheader
+                  v-if="item.header"
+                  class="text-uppercase text-medium-emphasis font-weight-bold"
+                >
+                  {{ item.header }}
+                </v-list-subheader>
                 <Link
+                  v-else
                   :href="route(item.route)"
                   preserve-state
                   class="text-decoration-none text-high-emphasis"
@@ -289,7 +296,14 @@
             </v-list-subheader>
 
             <template v-for="(item, itemIndex) in group.items" :key="itemIndex">
+              <div
+                v-if="item.header"
+                class="text-caption text-medium-emphasis font-weight-bold px-4 pt-2"
+              >
+                {{ item.header }}
+              </div>
               <Link
+                v-else
                 :href="route(item.route)"
                 preserve-state
                 class="text-decoration-none text-high-emphasis"
@@ -380,20 +394,6 @@ export default {
       return this.$page.props.auth.permissions || [];
     },
 
-    isAdmin() {
-      return this.userRoles.some((r) =>
-        ["superadmin", "administrator", "admin"].includes(r.toLowerCase())
-      );
-    },
-
-    isHR() {
-      return this.userRoles.some((r) =>
-        ["hr_director", "campus_hr", "hr_officer", "hr"].includes(
-          r.toLowerCase()
-        )
-      );
-    },
-
     modules() {
       return {
         dashboard: {
@@ -403,50 +403,62 @@ export default {
           permission: "dashboard.view",
         },
 
-        // myProfile: {
-        //   title: "My Profile",
-        //   route: "self-service.my-profile.index",
-        //   routePrefix: "self-service.my-profile",
-        //   permission: "profile.view_own",
-        // },
-
-        myTime: {
-          title: "My Time",
+        // Employee self-service: only the signed-in employee's own records.
+        // Items without the matching *_own permission are hidden, and the
+        // backend enforces the same permission plus ownership.
+        myHr: {
+          title: "My HR",
           items: [
-            // {
-            //   title: "My Attendance",
-            //   icon: "mdi-clock-outline",
-            //   route: "self-service.my-dtr.index",
-            //   permission: "attendance.view_own",
-            //   routePrefix: "self-service.my-dtr",
-            // },
-            // {
-            //   title: "My Schedule",
-            //   icon: "mdi-calendar-clock",
-            //   route: "self-service.my-schedule.index",
-            //   permission: "schedule.view_own",
-            //   routePrefix: "self-service.my-schedule",
-            // },
-          ],
-        },
-
-        myLeave: {
-          title: "My Leave",
-          items: [
-            // {
-            //   title: "My Leave Applications",
-            //   icon: "mdi-calendar-text",
-            //   route: "self-service.my-leaves.index",
-            //   permission: "leave.view_own",
-            //   routePrefix: "self-service.my-leaves",
-            // },
-            // {
-            //   title: "My Leave Balances",
-            //   icon: "mdi-scale-balance",
-            //   route: "self-service.my-leave-balances.index",
-            //   permission: "leave.view_balance_own",
-            //   routePrefix: "self-service.my-leave-balances",
-            // },
+            {
+              title: "My Profile",
+              icon: "mdi-account-circle-outline",
+              route: "people.my-profile.show",
+              permission: "employee.view_own",
+              routePrefix: "people.my-profile",
+            },
+            {
+              title: "My Work Schedule",
+              icon: "mdi-calendar-clock",
+              route: "time.my-schedule.index",
+              permission: "work_schedule.view_own",
+              routePrefix: "time.my-schedule",
+            },
+            {
+              title: "My Attendance",
+              icon: "mdi-clock-outline",
+              route: "time.my-attendance.index",
+              permission: "attendance.view_own",
+              routePrefix: "time.my-attendance",
+            },
+            { header: "My Leaves" },
+            {
+              title: "Apply Leave",
+              icon: "mdi-calendar-plus",
+              route: "leave.applications.create",
+              permission: "leave.create",
+              routePrefix: "leave.applications.create",
+            },
+            {
+              title: "My Applications",
+              icon: "mdi-calendar-text",
+              route: "leave.applications.index",
+              permission: "leave.view_own",
+              routePrefix: "leave.applications.index",
+            },
+            {
+              title: "Leave Balance",
+              icon: "mdi-scale-balance",
+              route: "leave.applications.my-balances",
+              permission: "leave.view_balance_own",
+              routePrefix: "leave.applications.my-balances",
+            },
+            {
+              title: "Leave History",
+              icon: "mdi-history",
+              route: "leave.applications.history",
+              permission: "leave.view_history_own",
+              routePrefix: "leave.applications.history",
+            },
           ],
         },
 
@@ -528,13 +540,6 @@ export default {
         leave: {
           title: "Leave Management",
           items: [
-            {
-              title: "Leave Applications",
-              icon: "mdi-calendar-text",
-              route: "leave.applications.index",
-              permission: "leave.view_own",
-              routePrefix: "leave.applications",
-            },
             {
               title: "Leave Approvals",
               icon: "mdi-calendar-check",
@@ -620,37 +625,18 @@ export default {
     },
 
     navItems() {
-      if (this.isAdmin) {
-        return [
-          this.modules.dashboard,
-          this.modules.people,
-          this.modules.time,
-          this.modules.leave,
-          this.modules.payroll,
-          this.modules.reports,
-          this.modules.administration,
-        ];
-      }
-
-      if (this.isHR) {
-        return [
-          this.modules.dashboard,
-          this.modules.people,
-          this.modules.time,
-          this.modules.leave,
-          this.modules.reports,
-        ];
-      }
-
+      // Every group is offered to every user; visibleNavItems keeps only the
+      // entries the user's permissions allow. A user holding several roles
+      // therefore sees the union of their capabilities. No role names.
       return [
         this.modules.dashboard,
-        // this.modules.myProfile,
-        this.modules.myTime,
-        this.modules.myLeave,
-        // Leave is permission-driven for every user: visibleNavItems keeps
-        // only the items the user has permission for, and hides the group
-        // when none remain.
+        this.modules.myHr,
+        this.modules.people,
+        this.modules.time,
         this.modules.leave,
+        this.modules.payroll,
+        this.modules.reports,
+        this.modules.administration,
       ];
     },
 
@@ -661,11 +647,14 @@ export default {
             return this.hasPermission(group.permission) ? group : null;
           }
 
-          const filteredItems = group.items.filter((item) =>
-            this.hasPermission(item.permission)
-          );
+          const filteredItems = group.items
+            .filter((item) => item.header || this.hasPermission(item.permission))
+            .filter(
+              (item, index, items) =>
+                !item.header || (items[index + 1] && !items[index + 1].header)
+            );
 
-          if (filteredItems.length === 0) return null;
+          if (!filteredItems.some((item) => !item.header)) return null;
 
           return {
             ...group,
@@ -690,8 +679,8 @@ export default {
 
     isGroupActive(group) {
       if (!group.items) return false;
-      return group.items.some((item) =>
-        this.route().current(`${item.routePrefix}*`)
+      return group.items.some(
+        (item) => item.routePrefix && this.route().current(`${item.routePrefix}*`)
       );
     },
 

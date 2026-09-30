@@ -593,6 +593,12 @@ export default {
       }),
     };
   },
+  mounted() {
+    // "Apply Leave" (leave.applications.create) lands here with ?apply=1.
+    if (new URLSearchParams(window.location.search).has("apply") && this.canApply) {
+      this.openModal();
+    }
+  },
   computed: {
     canApply() {
       return this.hasEmployeeRecord && this.can("leave.create");

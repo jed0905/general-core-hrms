@@ -22,6 +22,7 @@ class RolesAndPermissionsSeeder extends Seeder
         $permissions = [
             // Dashboard
             'dashboard.view',
+            'dashboard.hr.view', // organization-wide HR dashboard; others get the self-service dashboard
 
             // Employee Management
             'employee.view',
@@ -60,10 +61,11 @@ class RolesAndPermissionsSeeder extends Seeder
             'employee.experience.delete',
 
             // Employee Self-Service
-            'profile.view_own',
-            'profile.update_own',
+            'employee.view_own',
+            'employee.update_own',
 
             'attendance.view_own',
+            'attendance.export_own',
 
             'leave.view_own',
             'leave.create',
@@ -72,7 +74,7 @@ class RolesAndPermissionsSeeder extends Seeder
             'leave.view_balance_own',
             'leave.view_history_own',
 
-            'schedule.view_own',
+            'work_schedule.view_own',
 
             'request.view_own',
             'request.create',
@@ -329,6 +331,14 @@ class RolesAndPermissionsSeeder extends Seeder
 
             // Dashboard
             'dashboard.view',
+            'dashboard.hr.view',
+
+            // Self-service (own employee record only)
+            'employee.view_own',
+            'employee.update_own',
+            'work_schedule.view_own',
+            'attendance.view_own',
+            'attendance.export_own',
 
             // Employees
             'employee.view',
@@ -527,6 +537,14 @@ class RolesAndPermissionsSeeder extends Seeder
 
             // Dashboard
             'dashboard.view',
+            'dashboard.hr.view',
+
+            // Self-service (own employee record only)
+            'employee.view_own',
+            'employee.update_own',
+            'work_schedule.view_own',
+            'attendance.view_own',
+            'attendance.export_own',
 
             // Employees
             'employee.view',
@@ -675,6 +693,14 @@ class RolesAndPermissionsSeeder extends Seeder
 
             // Dashboard
             'dashboard.view',
+            'dashboard.hr.view',
+
+            // Self-service (own employee record only)
+            'employee.view_own',
+            'employee.update_own',
+            'work_schedule.view_own',
+            'attendance.view_own',
+            'attendance.export_own',
 
             // Employees
             'employee.view',
@@ -820,6 +846,13 @@ class RolesAndPermissionsSeeder extends Seeder
         // Leave access only. The payroll/compensation permissions above do not exist yet.
         $this->seedDefaultPermissions($payroll, [
 
+            // Self-service (own employee record only)
+            'employee.view_own',
+            'employee.update_own',
+            'work_schedule.view_own',
+            'attendance.view_own',
+            'attendance.export_own',
+
             // Leave: self-service
             'leave.view_own',
             'leave.create',
@@ -880,10 +913,11 @@ class RolesAndPermissionsSeeder extends Seeder
             'report.leave',
 
             // Self Service
-            'profile.view_own',
-            'profile.update_own',
+            'employee.view_own',
+            'employee.update_own',
 
             'attendance.view_own',
+            'attendance.export_own',
 
             'leave.view_own',
             'leave.create',
@@ -892,7 +926,7 @@ class RolesAndPermissionsSeeder extends Seeder
             'leave.view_balance_own',
             'leave.view_history_own',
 
-            'schedule.view_own',
+            'work_schedule.view_own',
 
             'request.view_own',
             'request.create',
@@ -911,10 +945,11 @@ class RolesAndPermissionsSeeder extends Seeder
             'dashboard.view',
 
             // Self Service
-            'profile.view_own',
-            'profile.update_own',
+            'employee.view_own',
+            'employee.update_own',
 
             'attendance.view_own',
+            'attendance.export_own',
 
             'leave.view_own',
             'leave.create',
@@ -923,7 +958,7 @@ class RolesAndPermissionsSeeder extends Seeder
             'leave.view_balance_own',
             'leave.view_history_own',
 
-            'schedule.view_own',
+            'work_schedule.view_own',
 
             'request.view_own',
             'request.create',

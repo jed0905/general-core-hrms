@@ -122,7 +122,7 @@ class LeavePolicyValidator
                 ->where('leave_type_id', $leaveTypeId)
                 ->first();
 
-            $availableBalance = ($balance->balance ?? 0) - ($balance->pending ?? 0);
+            $availableBalance = $balance ? $balance->available() : 0;
 
             // A pending application being edited already holds a reservation on this type.
             if ($existing && $existing->status === LeaveApplication::STATUS_PENDING && (int) $existing->leave_type_id === $leaveTypeId) {
