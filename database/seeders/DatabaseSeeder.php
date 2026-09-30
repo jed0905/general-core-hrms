@@ -15,6 +15,7 @@ class DatabaseSeeder extends Seeder
         $this->call([
             JobStatusSeeder::class,
             RolesAndPermissionsSeeder::class,
+            EmployeeMovementTypeSeeder::class,
             SuperAdminSeeder::class,
             MaintenanceSeeder::class,
             SalarySeeder::class,

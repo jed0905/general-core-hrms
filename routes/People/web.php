@@ -7,9 +7,12 @@ use App\Http\Controllers\Web\People\EmployeeDocumentController;
 use App\Http\Controllers\Web\People\EmployeeEducationController;
 use App\Http\Controllers\Web\People\EmployeeEmploymentController;
 use App\Http\Controllers\Web\People\EmployeeExperienceController;
+use App\Http\Controllers\Web\People\EmployeeMovementController;
+use App\Http\Controllers\Web\People\EmployeeMovementTypeController;
 use App\Http\Controllers\Web\People\EmployeePersonalController;
 use App\Http\Controllers\Web\People\EmploymentStatusController;
 use App\Http\Controllers\Web\People\JobTitleController;
+use App\Http\Controllers\Web\People\MyEmploymentHistoryController;
 use App\Http\Controllers\Web\People\MyProfileController;
 use Illuminate\Support\Facades\Route;
 
@@ -186,3 +189,63 @@ Route::middleware(['auth', 'verified'])
             ->middleware('can:employee.update_own')
             ->name('update');
     });
+
+/*
+|--------------------------------------------------------------------------
+| Employee Movements (employment history)
+|--------------------------------------------------------------------------
+|
+| Capability via employee_movement.* permissions; record rules via
+| EmployeeMovementPolicy. Static paths come before /{employeeMovement}.
+|
+*/
+Route::middleware(['auth', 'verified'])
+    ->prefix('people/employee-movements')
+    ->name('people.employee-movements.')
+    ->group(function () {
+        Route::get('/', [EmployeeMovementController::class, 'index'])
+            ->middleware('can:employee_movement.view')
+            ->name('index');
+        Route::get('/create', [EmployeeMovementController::class, 'create'])
+            ->middleware('can:employee_movement.create')
+            ->name('create');
+        Route::get('/export', [EmployeeMovementController::class, 'export'])
+            ->middleware('can:employee_movement.export')
+            ->name('export');
+        Route::post('/', [EmployeeMovementController::class, 'store'])
+            ->middleware('can:employee_movement.create')
+            ->name('store');
+        Route::get('/{employeeMovement}', [EmployeeMovementController::class, 'show'])
+            ->middleware('can:view,employeeMovement')
+            ->name('show');
+        Route::put('/{employeeMovement}', [EmployeeMovementController::class, 'update'])
+            ->middleware('can:employee_movement.update')
+            ->name('update');
+        Route::post('/{employeeMovement}/cancel', [EmployeeMovementController::class, 'cancel'])
+            ->middleware('can:employee_movement.cancel')
+            ->name('cancel');
+    });
+
+Route::middleware(['auth', 'verified'])
+    ->prefix('people/employee-movement-types')
+    ->name('people.employee-movement-types.')
+    ->group(function () {
+        Route::get('/', [EmployeeMovementTypeController::class, 'index'])
+            ->middleware('can:employee_movement_type.view')
+            ->name('index');
+        Route::post('/', [EmployeeMovementTypeController::class, 'store'])
+            ->middleware('can:employee_movement_type.create')
+            ->name('store');
+        Route::put('/{employeeMovementType}', [EmployeeMovementTypeController::class, 'update'])
+            ->middleware('can:employee_movement_type.update')
+            ->name('update');
+        Route::delete('/{employeeMovementType}', [EmployeeMovementTypeController::class, 'destroy'])
+            ->middleware('can:employee_movement_type.archive')
+            ->name('destroy');
+    });
+
+// Employee self-service: own effective movements only.
+Route::middleware(['auth', 'verified'])
+    ->get('people/my-employment-history', [MyEmploymentHistoryController::class, 'index'])
+    ->middleware('can:employee_movement.view_own')
+    ->name('people.my-employment-history.index');

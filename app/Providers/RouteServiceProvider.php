@@ -19,7 +19,6 @@ class RouteServiceProvider extends ServiceProvider
      */
     public const HOME = '/dashboard';
 
-
     /**
      * Define your route model bindings, pattern filters, and other route configuration.
      */
@@ -37,7 +36,6 @@ class RouteServiceProvider extends ServiceProvider
             Route::middleware('web')
                 ->group(base_path('routes/web.php'));
 
-
             // Administration Routes
             Route::middleware(['auth', 'web'])
                 ->group(base_path('routes/Administration/web.php'));
@@ -53,9 +51,13 @@ class RouteServiceProvider extends ServiceProvider
             // Leave Routes
             Route::middleware(['auth', 'web'])
                 ->group(base_path('routes/Leave/web.php'));
-                
+
             Route::middleware(['auth', 'web'])
                 ->group(base_path('routes/Payroll/web.php'));
+
+            // Core HR Reports
+            Route::middleware(['auth', 'web'])
+                ->group(base_path('routes/Reports/web.php'));
         });
     }
 }

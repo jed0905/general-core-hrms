@@ -5,9 +5,11 @@ namespace App\Services;
 use App\Models\Department;
 use App\Models\Employee;
 use App\Models\EmployeeWorkSchedule;
+use App\Models\Holiday;
 use App\Models\WorkSchedule;
 use Carbon\CarbonInterface;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -79,19 +81,44 @@ class EmployeeWorkScheduleService
      */
     public function getDaySchedule(Employee $employee, CarbonInterface $date, ?HolidayService $holidays = null): array
     {
+        $holidays ??= app(HolidayService::class);
         $day = $date->toDateString();
 
-        $assignment = EmployeeWorkSchedule::query()
-            ->where('employee_id', $employee->id)
-            ->where('effective_from', '<=', $day)
-            ->where(fn ($q) => $q->whereNull('effective_to')->orWhere('effective_to', '>=', $day))
-            ->with(['workSchedule:id,name,code', 'workSchedule.days.shift:id,name,code,start_time,end_time,required_hours,is_overnight'])
-            ->orderByDesc('is_primary')
-            ->orderByDesc('effective_from')
+        $assignments = $this->assignmentsQuery([$employee->id], $day, $day)->get();
+
+        return $this->resolveDay($assignments, $date, $holidays->findForDate($date));
+    }
+
+    /**
+     * Assignments overlapping [$from, $to] for the given employees, with the
+     * weekly days and shifts needed by resolveDay().
+     */
+    public function assignmentsQuery(iterable $employeeIds, string $from, string $to): Builder
+    {
+        return EmployeeWorkSchedule::query()
+            ->whereIn('employee_id', collect($employeeIds)->all())
+            ->where('effective_from', '<=', $to)
+            ->where(fn ($q) => $q->whereNull('effective_to')->orWhere('effective_to', '>=', $from))
+            ->with(['workSchedule:id,name,code', 'workSchedule.days.shift:id,name,code,start_time,end_time,required_hours,is_overnight']);
+    }
+
+    /**
+     * The single rule for "what is this employee scheduled to do on $date",
+     * given their assignments and the holiday on that date (if any).
+     * Used by the dashboard and by the daily roster report.
+     */
+    public function resolveDay(Collection $assignments, CarbonInterface $date, ?Holiday $holiday): array
+    {
+        $day = $date->toDateString();
+
+        // In effect on $day; primary first, then the most recent.
+        $assignment = $assignments
+            ->filter(fn (EmployeeWorkSchedule $a) => substr((string) $a->effective_from, 0, 10) <= $day
+                && ($a->effective_to === null || substr((string) $a->effective_to, 0, 10) >= $day))
+            ->sortBy([['is_primary', 'desc'], ['effective_from', 'desc']])
             ->first();
 
         $scheduleDay = $assignment?->workSchedule?->days->firstWhere('day_of_week', $date->dayOfWeek);
-        $holiday = ($holidays ?? app(HolidayService::class))->findForDate($date);
         $isWorkingDay = (bool) ($scheduleDay?->is_working_day && $scheduleDay?->shift)
             && ! ($holiday && ! $holiday->is_working_day);
 
@@ -100,7 +127,7 @@ class EmployeeWorkScheduleService
             'has_schedule' => $assignment !== null,
             'schedule' => $assignment?->workSchedule?->only(['id', 'name', 'code']),
             'is_working_day' => $isWorkingDay,
-            'shift' => $scheduleDay?->is_working_day ? $scheduleDay->shift?->only(['name', 'code', 'start_time', 'end_time', 'required_hours', 'is_overnight']) : null,
+            'shift' => $scheduleDay?->is_working_day ? $scheduleDay->shift?->only(['id', 'name', 'code', 'start_time', 'end_time', 'required_hours', 'is_overnight']) : null,
             'holiday' => $holiday?->only(['name', 'type', 'is_working_day']),
         ];
     }

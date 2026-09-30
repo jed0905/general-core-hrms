@@ -2,7 +2,6 @@
 
 namespace App\Models;
 
-use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Notifications\Notifiable;
@@ -10,6 +9,11 @@ use Illuminate\Notifications\Notifiable;
 class Employee extends Model
 {
     use HasFactory, Notifiable;
+
+    /**
+     * Record lifecycle values of employees.status (see People EmployeeController validation).
+     */
+    public const STATUSES = ['active', 'archived', 'on_leave', 'terminated'];
 
     protected $fillable = [
         'photo',
@@ -98,6 +102,4 @@ class Employee extends Model
     {
         return $this->hasMany(EmployeeWorkSchedule::class);
     }
-
-
 }

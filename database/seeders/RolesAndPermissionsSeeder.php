@@ -90,6 +90,12 @@ class RolesAndPermissionsSeeder extends Seeder
             'employee_movement.implement',
             'employee_movement.cancel',
             'employee_movement.export',
+            'employee_movement.view_own',
+
+            'employee_movement_type.view',
+            'employee_movement_type.create',
+            'employee_movement_type.update',
+            'employee_movement_type.archive',
 
             // Organization
             'organization.view',
@@ -244,6 +250,8 @@ class RolesAndPermissionsSeeder extends Seeder
             'report.employee',
             'report.attendance',
             'report.leave',
+            'report.work_schedule',
+            'report.user_access',
         ];
 
         /*
@@ -339,6 +347,7 @@ class RolesAndPermissionsSeeder extends Seeder
             'work_schedule.view_own',
             'attendance.view_own',
             'attendance.export_own',
+            'employee_movement.view_own',
 
             // Employees
             'employee.view',
@@ -386,6 +395,12 @@ class RolesAndPermissionsSeeder extends Seeder
             'employee_movement.implement',
             'employee_movement.cancel',
             'employee_movement.export',
+
+            // Movement type configuration
+            'employee_movement_type.view',
+            'employee_movement_type.create',
+            'employee_movement_type.update',
+            'employee_movement_type.archive',
 
             // Organization
             'organization.view',
@@ -477,8 +492,14 @@ class RolesAndPermissionsSeeder extends Seeder
             'leave_approval_workflow.update',
             'leave_approval_workflow.archive',
 
-            // Leave Reports
+            // Reports
+            'report.view',
+            'report.export',
+            'report.employee',
+            'report.attendance',
             'report.leave',
+            'report.work_schedule',
+            'report.user_access',
 
             // Holidays
             'holiday.view',
@@ -545,6 +566,7 @@ class RolesAndPermissionsSeeder extends Seeder
             'work_schedule.view_own',
             'attendance.view_own',
             'attendance.export_own',
+            'employee_movement.view_own',
 
             // Employees
             'employee.view',
@@ -585,6 +607,11 @@ class RolesAndPermissionsSeeder extends Seeder
             'employee_movement.implement',
             'employee_movement.cancel',
             'employee_movement.export',
+
+            // Movement type configuration
+            'employee_movement_type.view',
+            'employee_movement_type.create',
+            'employee_movement_type.update',
 
             // Organization
             'organization.view',
@@ -681,6 +708,7 @@ class RolesAndPermissionsSeeder extends Seeder
             'report.employee',
             'report.attendance',
             'report.leave',
+            'report.work_schedule',
         ]);
 
         /*
@@ -701,6 +729,7 @@ class RolesAndPermissionsSeeder extends Seeder
             'work_schedule.view_own',
             'attendance.view_own',
             'attendance.export_own',
+            'employee_movement.view_own',
 
             // Employees
             'employee.view',
@@ -734,6 +763,9 @@ class RolesAndPermissionsSeeder extends Seeder
             'employee_movement.update',
             'employee_movement.submit',
             'employee_movement.export',
+
+            // Movement type configuration
+            'employee_movement_type.view',
 
             // Organization
             'organization.view',
@@ -791,6 +823,7 @@ class RolesAndPermissionsSeeder extends Seeder
             'report.employee',
             'report.attendance',
             'report.leave',
+            'report.work_schedule',
         ]);
 
         /*
@@ -852,6 +885,7 @@ class RolesAndPermissionsSeeder extends Seeder
             'work_schedule.view_own',
             'attendance.view_own',
             'attendance.export_own',
+            'employee_movement.view_own',
 
             // Leave: self-service
             'leave.view_own',
@@ -872,6 +906,7 @@ class RolesAndPermissionsSeeder extends Seeder
             'leave.balance_history.export',
 
             // Reports
+            'report.view',
             'report.leave',
         ]);
 
@@ -918,6 +953,7 @@ class RolesAndPermissionsSeeder extends Seeder
 
             'attendance.view_own',
             'attendance.export_own',
+            'employee_movement.view_own',
 
             'leave.view_own',
             'leave.create',
@@ -950,6 +986,7 @@ class RolesAndPermissionsSeeder extends Seeder
 
             'attendance.view_own',
             'attendance.export_own',
+            'employee_movement.view_own',
 
             'leave.view_own',
             'leave.create',

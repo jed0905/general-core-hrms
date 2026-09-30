@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Holiday;
 use Carbon\CarbonInterface;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
 class HolidayService
@@ -14,12 +15,31 @@ class HolidayService
      */
     public function findForDate(CarbonInterface $date): ?Holiday
     {
+        return $this->matchDate($this->getForRange($date, $date), $date);
+    }
+
+    /**
+     * Active holidays that can fall within [$from, $to]: dated ones in range
+     * plus every recurring one. Pair with matchDate() per day.
+     */
+    public function getForRange(CarbonInterface $from, CarbonInterface $to): Collection
+    {
         return Holiday::where('status', 'active')
-            ->where(fn ($q) => $q->whereDate('date', $date->toDateString())
-                ->orWhere(fn ($r) => $r->where('is_recurring', true)
-                    ->whereMonth('date', $date->month)
-                    ->whereDay('date', $date->day)))
-            ->orderByDesc('is_recurring')
+            ->where(fn ($q) => $q->whereBetween('date', [$from->toDateString(), $to->toDateString()])
+                ->orWhere('is_recurring', true))
+            ->get();
+    }
+
+    /**
+     * The holiday on $date (exact date, or same month/day when recurring).
+     */
+    public function matchDate(Collection $holidays, CarbonInterface $date): ?Holiday
+    {
+        return $holidays
+            ->filter(fn (Holiday $h) => $h->is_recurring
+                ? ($h->date->month === $date->month && $h->date->day === $date->day)
+                : $h->date->toDateString() === $date->toDateString())
+            ->sortByDesc('is_recurring')
             ->first();
     }
 
