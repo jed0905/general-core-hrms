@@ -5,6 +5,7 @@ use App\Http\Controllers\Web\Time\HolidayController;
 use App\Http\Controllers\Web\Time\MyAttendanceController;
 use App\Http\Controllers\Web\Time\MyScheduleController;
 use App\Http\Controllers\Web\Time\ShiftController;
+use App\Http\Controllers\Web\Time\TimeLogController;
 use App\Http\Controllers\Web\Time\WorkScheduleController;
 use Illuminate\Support\Facades\Route;
 
@@ -116,6 +117,15 @@ Route::middleware(['auth', 'verified'])->prefix('time')->name('time.')->group(fu
             ->name('destroy')
             ->middleware('can:employee_work_schedule.remove');
     });
+
+    /*
+    |--------------------------------------------------------------------------
+    | Time Logs: raw device punches, organization-wide (not a DTR)
+    |--------------------------------------------------------------------------
+    */
+    Route::get('time-logs', [TimeLogController::class, 'index'])
+        ->name('time-logs.index')
+        ->middleware('can:attendance.view');
 
     Route::prefix('holidays')->name('holidays.')->group(function () {
         Route::get('/', [HolidayController::class, 'index'])

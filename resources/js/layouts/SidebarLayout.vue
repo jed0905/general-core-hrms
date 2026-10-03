@@ -542,6 +542,13 @@ export default {
               routePrefix: "time.schedules",
             },
             {
+              title: "Time Logs",
+              icon: "mdi-fingerprint",
+              route: "time.time-logs.index",
+              permission: "attendance.view",
+              routePrefix: "time.time-logs",
+            },
+            {
               title: "Holidays",
               icon: "mdi-calendar-star",
               route: "time.holidays.index",

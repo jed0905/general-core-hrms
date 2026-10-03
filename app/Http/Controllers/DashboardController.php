@@ -64,29 +64,52 @@ class DashboardController extends Controller
         |--------------------------------------------------------------------------
         */
 
+        /*
+         * One row per location: { id, location, employee_count }.
+         * locations has no name column; the address identifies a location
+         * (city alone is not unique). The active-status condition sits in
+         * the join so locations without active employees still show as 0.
+         * Active employees with no location are counted as "Unassigned".
+         */
+
         $employeesPerLocation = Location::query()
-            ->leftJoin(
-                'employees',
-                'locations.id',
-                '=',
-                'employees.location_id'
-            )
-            ->where(function ($query) {
-                $query
-                    ->whereNull('employees.status')
-                    ->orWhere('employees.status', 'active');
+            ->leftJoin('employees', function ($join) {
+                $join->on('locations.id', '=', 'employees.location_id')
+                    ->where('employees.status', 'active');
             })
             ->select(
                 'locations.id',
                 'locations.address',
+                'locations.city',
                 DB::raw('COUNT(employees.id) as employee_count')
             )
             ->groupBy(
                 'locations.id',
-                'locations.address'
+                'locations.address',
+                'locations.city'
             )
             ->orderByDesc('employee_count')
-            ->get();
+            ->orderBy('locations.id')
+            ->get()
+            ->map(fn ($location) => [
+                'id' => $location->id,
+                'location' => trim((string) $location->address)
+                    ?: (trim((string) $location->city) ?: "Location #{$location->id}"),
+                'employee_count' => (int) $location->employee_count,
+            ]);
+
+        $unassignedEmployees = Employee::query()
+            ->where('status', 'active')
+            ->whereNull('location_id')
+            ->count();
+
+        if ($unassignedEmployees > 0) {
+            $employeesPerLocation->push([
+                'id' => null,
+                'location' => 'Unassigned',
+                'employee_count' => $unassignedEmployees,
+            ]);
+        }
 
         /*
         |--------------------------------------------------------------------------

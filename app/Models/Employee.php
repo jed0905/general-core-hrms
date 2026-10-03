@@ -80,7 +80,7 @@ class Employee extends Model
 
     public function supervisor()
     {
-        return $this->hasOne(Employee::class, 'supervisor_id', 'id');
+        return $this->belongsTo(Employee::class, 'supervisor_id');
     }
 
     public function nationality()

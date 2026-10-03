@@ -31,18 +31,12 @@ class AttendanceSummaryReport extends Report
 
     public function filters(): array
     {
-        return [
-            ...$this->rangeFilters(),
-            ...$this->employeeFilters(['search', 'department_id', 'include_sub_departments']),
-            ['key' => 'unregistered_only', 'label' => 'Unregistered IDs only', 'type' => 'boolean', 'default' => false],
-        ];
+        return $this->attendanceLogs()->filters(['date_from', 'date_to', 'search', 'department_id', 'include_sub_departments', 'location_id', 'unregistered_only']);
     }
 
     public function rules(): array
     {
-        return array_merge($this->employeeFilterRules(), $this->rangeRules(), [
-            'unregistered_only' => ['nullable', 'boolean'],
-        ]);
+        return $this->attendanceLogs()->rules();
     }
 
     public function notes(): array
