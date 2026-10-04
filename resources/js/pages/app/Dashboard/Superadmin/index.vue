@@ -149,7 +149,7 @@
           </div>
 
           <div class="chart-container">
-            <BarChart :labels="jobTitleLabels" :values="jobTitleValues" />
+            <StackedBarChart :labels="jobTitleLabels" :values="jobTitleValues" />
           </div>
         </v-card>
       </v-col>
@@ -335,7 +335,7 @@
           </div>
 
           <div class="chart-container">
-            <BarChart
+            <StackedBarChart
               :labels="leaveSummary.typeLabels"
               :values="leaveSummary.typeValues"
             />
@@ -467,14 +467,14 @@
 import SidebarLayout from "@/layouts/SidebarLayout.vue";
 
 import DonutChart from "@/components/DonutChart.vue";
-import BarChart from "@/components/BarChart.vue";
+import StackedBarChart from "@/components/StackedBarChart.vue";
 
 export default {
   layout: SidebarLayout,
 
   components: {
     DonutChart,
-    BarChart,
+    StackedBarChart,
   },
 
   props: {

@@ -279,7 +279,7 @@
           </div>
 
           <div class="chart-container">
-            <BarChart
+            <StackedBarChart
               :labels="leaveSummary.typeLabels"
               :values="leaveSummary.typeValues"
             />
