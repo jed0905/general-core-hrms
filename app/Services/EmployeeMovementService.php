@@ -162,6 +162,8 @@ class EmployeeMovementService
 
             if ($data['effective_date'] <= $today) {
                 $this->implement($movement, $employee);
+            } elseif ($changed === [] && $type->employee_status === null) {
+                $this->recordAssignment($movement, $employee);
             } else {
                 $movement->update(['snapshot' => ['to' => $this->labels($this->requestedState($movement))]]);
             }
@@ -284,6 +286,26 @@ class EmployeeMovementService
         }
 
         $record['snapshot'] = ['from' => $this->labels($before), 'to' => $this->labels($after)];
+
+        $movement->update($record);
+    }
+
+    /**
+     * A scheduled movement that changes nothing (e.g. Hiring with a future
+     * start date) records the assignment it refers to, so it isn't an empty
+     * record until its date. Only the assignment fields are stored: changed_fields
+     * stays empty and to_status null, so applying it later still changes nothing,
+     * and implement() captures the state on the effective date as usual.
+     */
+    protected function recordAssignment(EmployeeMovement $movement, Employee $employee): void
+    {
+        $state = $this->stateOf($employee);
+        $record = ['snapshot' => ['from' => $this->labels($state), 'to' => $this->labels($state)]];
+
+        foreach (EmployeeMovement::FIELDS as $field) {
+            $record["from_{$field}"] = $state[$field];
+            $record["to_{$field}"] = $state[$field];
+        }
 
         $movement->update($record);
     }

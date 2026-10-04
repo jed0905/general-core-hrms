@@ -15,6 +15,7 @@ class Kernel extends ConsoleKernel
     {
         // $schedule->command('inspire')->daily();
         $schedule->command('employee-movements:apply-due')->dailyAt('00:05')->withoutOverlapping();
+        $schedule->command('recruitment:expire-offers')->dailyAt('00:10')->withoutOverlapping();
         $schedule->command('leaves:credit')->daily();
         $schedule->job(new CheckTardinessJob)
             ->dailyAt('09:30')

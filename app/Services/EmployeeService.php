@@ -8,13 +8,23 @@ use App\Models\EmploymentStatus;
 use App\Models\JobTitle;
 use App\Models\Location;
 use App\Models\Nationality;
+use App\Models\NumberSequence;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\ValidationException;
 
 class EmployeeService
 {
+    /**
+     * Columns of work_experiences that callers may set (besides employee_id).
+     */
+    public const WORK_EXPERIENCE_FIELDS = ['company', 'job_title', 'from', 'to', 'notes'];
+
+    public function __construct(protected NumberSequenceService $numberSequences) {}
+
     /**
      * Get paginated employees with search and filters.
      */
@@ -36,9 +46,9 @@ class EmployeeService
                         ->orWhere('work_email', 'like', "%{$search}%");
                 });
             })
-            ->when($filters['department_id'] ?? null, fn($q, $id) => $q->where('department_id', $id))
-            ->when($filters['location_id'] ?? null, fn($q, $id) => $q->where('location_id', $id))
-            ->when($filters['status'] ?? null, fn($q, $status) => $q->where('status', $status))
+            ->when($filters['department_id'] ?? null, fn ($q, $id) => $q->where('department_id', $id))
+            ->when($filters['location_id'] ?? null, fn ($q, $id) => $q->where('location_id', $id))
+            ->when($filters['status'] ?? null, fn ($q, $status) => $q->where('status', $status))
             ->latest()
             ->paginate($perPage)
             ->withQueryString();
@@ -54,16 +64,16 @@ class EmployeeService
             'job_titles' => JobTitle::select('id', 'job_title')->get(),
             'locations' => Location::select('id', 'city', 'province', 'address', 'is_main')
                 ->get()
-                ->map(fn($loc) => [
+                ->map(fn ($loc) => [
                     'id' => $loc->id,
-                    'name' => collect([$loc->city, $loc->province])->filter()->join(', ') ?: ($loc->address ?: 'Location #' . $loc->id),
+                    'name' => collect([$loc->city, $loc->province])->filter()->join(', ') ?: ($loc->address ?: 'Location #'.$loc->id),
                 ]),
             'employment_statuses' => EmploymentStatus::select('id', 'name')->get(),
             'nationalities' => Nationality::select('id', 'name')->get(),
             'supervisors' => Employee::select('id', 'emp_first_name', 'emp_last_name')
                 ->where('status', 'active')
                 ->get()
-                ->map(fn($emp) => [
+                ->map(fn ($emp) => [
                     'id' => $emp->id,
                     'name' => "{$emp->emp_first_name} {$emp->emp_last_name}",
                 ]),
@@ -72,6 +82,10 @@ class EmployeeService
 
     /**
      * Store a new employee with uploaded media and nested records.
+     *
+     * A blank employee_number is generated from the configured "employee_number"
+     * sequence inside this transaction (see NumberSequenceService), so callers such
+     * as recruitment's applicant conversion get a unique number without extra work.
      */
     public function createEmployee(array $data): Employee
     {
@@ -79,11 +93,15 @@ class EmployeeService
             $education = Arr::pull($data, 'education', []);
             $workExperience = Arr::pull($data, 'work_experience', []);
 
-            if (isset($data['photo']) && $data['photo'] instanceof \Illuminate\Http\UploadedFile) {
+            if (blank($data['employee_number'] ?? null)) {
+                $data['employee_number'] = $this->generateEmployeeNumber();
+            }
+
+            if (isset($data['photo']) && $data['photo'] instanceof UploadedFile) {
                 $data['photo'] = $data['photo']->store('employees/photos', 'public');
             }
 
-            if (isset($data['e_signature']) && $data['e_signature'] instanceof \Illuminate\Http\UploadedFile) {
+            if (isset($data['e_signature']) && $data['e_signature'] instanceof UploadedFile) {
                 $data['e_signature_path'] = $data['e_signature']->store('employees/signatures', 'public');
             }
 
@@ -97,6 +115,23 @@ class EmployeeService
     }
 
     /**
+     * Next number from the employee-number sequence, skipping numbers that were entered manually.
+     */
+    protected function generateEmployeeNumber(): string
+    {
+        if (! $this->numberSequences->autoGenerates(NumberSequence::EMPLOYEE_NUMBER)) {
+            throw ValidationException::withMessages([
+                'employee_number' => 'Enter an employee number; automatic numbering is turned off.',
+            ]);
+        }
+
+        return $this->numberSequences->next(
+            NumberSequence::EMPLOYEE_NUMBER,
+            fn (string $candidate) => Employee::where('employee_number', $candidate)->exists()
+        );
+    }
+
+    /**
      * Update an employee's details, manage media replacements, and sync nested records.
      */
     public function updateEmployee(Employee $employee, array $data): Employee
@@ -106,7 +141,7 @@ class EmployeeService
             $workExperience = Arr::pull($data, 'work_experience', []);
 
             // Handle Photo upload & cleanup
-            if (isset($data['photo']) && $data['photo'] instanceof \Illuminate\Http\UploadedFile) {
+            if (isset($data['photo']) && $data['photo'] instanceof UploadedFile) {
                 if ($employee->photo) {
                     Storage::disk('public')->delete($employee->photo);
                 }
@@ -116,7 +151,7 @@ class EmployeeService
             }
 
             // Handle E-Signature upload & cleanup
-            if (isset($data['e_signature']) && $data['e_signature'] instanceof \Illuminate\Http\UploadedFile) {
+            if (isset($data['e_signature']) && $data['e_signature'] instanceof UploadedFile) {
                 if ($employee->e_signature_path) {
                     Storage::disk('public')->delete($employee->e_signature_path);
                 }
@@ -141,10 +176,10 @@ class EmployeeService
         $employee->education()->delete();
 
         $validEducation = collect($education)->filter(function ($item) {
-            return !empty($item['institute']) || !empty($item['level']) || !empty($item['major_specialization']);
+            return ! empty($item['institute']) || ! empty($item['level']) || ! empty($item['major_specialization']);
         })->toArray();
 
-        if (!empty($validEducation)) {
+        if (! empty($validEducation)) {
             $employee->education()->createMany($validEducation);
         }
     }
@@ -156,11 +191,12 @@ class EmployeeService
     {
         $employee->workExperience()->delete();
 
+        // Canonical fields are the work_experiences columns: from / to / notes.
         $validExperience = collect($workExperience)->filter(function ($item) {
-            return !empty($item['company']) || !empty($item['job_title']);
-        })->toArray();
+            return ! empty($item['company']) || ! empty($item['job_title']);
+        })->map(fn ($item) => Arr::only($item, self::WORK_EXPERIENCE_FIELDS))->values()->toArray();
 
-        if (!empty($validExperience)) {
+        if (! empty($validExperience)) {
             $employee->workExperience()->createMany($validExperience);
         }
     }

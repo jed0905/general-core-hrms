@@ -252,6 +252,74 @@ class RolesAndPermissionsSeeder extends Seeder
             'report.leave',
             'report.work_schedule',
             'report.user_access',
+            'report.recruitment',
+
+            // Recruitment phase 2 (applicants, applications, screening, shortlisting)
+            'recruitment.applicant.view',
+            'recruitment.applicant.create',
+            'recruitment.applicant.update',
+            'recruitment.application.view',
+            'recruitment.application.create',
+            'recruitment.application.move_stage',
+            'recruitment.application.reject',
+            'recruitment.application.withdraw',
+            'recruitment.screening.view',
+            'recruitment.screening.create',
+            'recruitment.screening.update',
+            'recruitment.shortlist.create',
+            'recruitment.config.manage',
+
+            // Recruitment phase 3 (interviews, assessments, evaluations; scorecards come from panel assignment)
+            'recruitment.interview.view',
+            'recruitment.interview.create',
+            'recruitment.interview.update',
+            'recruitment.assessment.view',
+            'recruitment.assessment.create',
+            'recruitment.assessment.update',
+            'recruitment.evaluation.view',
+
+            // Recruitment phase 4 (selection and offers)
+            'recruitment.selection.view',
+            'recruitment.selection.create',
+            'recruitment.offer.view',
+            'recruitment.offer.create',
+            'recruitment.offer.update',
+            'recruitment.offer.approve',
+            'recruitment.offer.issue',
+            'recruitment.offer.respond',
+            'recruitment.offer.withdraw',
+
+            // Recruitment phase 5 (convert an accepted candidate; also needs employee.create and employee_movement.create)
+            'recruitment.conversion.view',
+            'recruitment.conversion.create',
+
+            // Onboarding (phase 6)
+            'onboarding.view',
+            'onboarding.create',
+            'onboarding.update',
+            'onboarding.complete',
+            'onboarding.cancel',
+            'onboarding.task.update',
+            'onboarding.task.verify',
+            'onboarding.template.view',
+            'onboarding.template.create',
+            'onboarding.template.update',
+            'onboarding.view_own',
+            'onboarding.update_own',
+
+            // Recruitment (job requisitions, vacancies)
+            'recruitment.requisition.view',
+            'recruitment.requisition.create',
+            'recruitment.requisition.update',
+            'recruitment.requisition.submit',
+            'recruitment.requisition.approve',
+            'recruitment.requisition.cancel',
+            'recruitment.vacancy.view',
+            'recruitment.vacancy.create',
+            'recruitment.vacancy.update',
+            'recruitment.vacancy.publish',
+            'recruitment.vacancy.close',
+
         ];
 
         /*
@@ -336,6 +404,72 @@ class RolesAndPermissionsSeeder extends Seeder
         */
 
         $this->seedDefaultPermissions($hrDirector, [
+
+            // Recruitment: applicants and pipeline
+            'recruitment.applicant.view',
+            'recruitment.applicant.create',
+            'recruitment.applicant.update',
+            'recruitment.application.view',
+            'recruitment.application.create',
+            'recruitment.application.move_stage',
+            'recruitment.application.reject',
+            'recruitment.application.withdraw',
+            'recruitment.screening.view',
+            'recruitment.screening.create',
+            'recruitment.screening.update',
+            'recruitment.shortlist.create',
+            'recruitment.config.manage',
+
+            // Recruitment phase 3 (interviews, assessments, evaluations; scorecards come from panel assignment)
+            'recruitment.interview.view',
+            'recruitment.interview.create',
+            'recruitment.interview.update',
+            'recruitment.assessment.view',
+            'recruitment.assessment.create',
+            'recruitment.assessment.update',
+            'recruitment.evaluation.view',
+
+            // Recruitment phase 4 (selection and offers)
+            'recruitment.selection.view',
+            'recruitment.selection.create',
+            'recruitment.offer.view',
+            'recruitment.offer.create',
+            'recruitment.offer.update',
+            'recruitment.offer.approve',
+            'recruitment.offer.issue',
+            'recruitment.offer.respond',
+            'recruitment.offer.withdraw',
+
+            // Recruitment phase 5 (convert an accepted candidate; also needs employee.create and employee_movement.create)
+            'recruitment.conversion.view',
+            'recruitment.conversion.create',
+
+            // Onboarding (phase 6)
+            'onboarding.view',
+            'onboarding.create',
+            'onboarding.update',
+            'onboarding.complete',
+            'onboarding.cancel',
+            'onboarding.task.update',
+            'onboarding.task.verify',
+            'onboarding.template.view',
+            'onboarding.template.create',
+            'onboarding.template.update',
+            'onboarding.view_own',
+            'onboarding.update_own',
+
+            // Recruitment
+            'recruitment.requisition.view',
+            'recruitment.requisition.create',
+            'recruitment.requisition.update',
+            'recruitment.requisition.submit',
+            'recruitment.requisition.approve',
+            'recruitment.requisition.cancel',
+            'recruitment.vacancy.view',
+            'recruitment.vacancy.create',
+            'recruitment.vacancy.update',
+            'recruitment.vacancy.publish',
+            'recruitment.vacancy.close',
 
             // Dashboard
             'dashboard.view',
@@ -500,6 +634,7 @@ class RolesAndPermissionsSeeder extends Seeder
             'report.leave',
             'report.work_schedule',
             'report.user_access',
+            'report.recruitment',
 
             // Holidays
             'holiday.view',
@@ -555,6 +690,72 @@ class RolesAndPermissionsSeeder extends Seeder
         */
 
         $this->seedDefaultPermissions($hrManager, [
+
+            // Recruitment: applicants and pipeline
+            'recruitment.applicant.view',
+            'recruitment.applicant.create',
+            'recruitment.applicant.update',
+            'recruitment.application.view',
+            'recruitment.application.create',
+            'recruitment.application.move_stage',
+            'recruitment.application.reject',
+            'recruitment.application.withdraw',
+            'recruitment.screening.view',
+            'recruitment.screening.create',
+            'recruitment.screening.update',
+            'recruitment.shortlist.create',
+            'recruitment.config.manage',
+
+            // Recruitment phase 3 (interviews, assessments, evaluations; scorecards come from panel assignment)
+            'recruitment.interview.view',
+            'recruitment.interview.create',
+            'recruitment.interview.update',
+            'recruitment.assessment.view',
+            'recruitment.assessment.create',
+            'recruitment.assessment.update',
+            'recruitment.evaluation.view',
+
+            // Recruitment phase 4 (selection and offers)
+            'recruitment.selection.view',
+            'recruitment.selection.create',
+            'recruitment.offer.view',
+            'recruitment.offer.create',
+            'recruitment.offer.update',
+            'recruitment.offer.approve',
+            'recruitment.offer.issue',
+            'recruitment.offer.respond',
+            'recruitment.offer.withdraw',
+
+            // Recruitment phase 5 (convert an accepted candidate; also needs employee.create and employee_movement.create)
+            'recruitment.conversion.view',
+            'recruitment.conversion.create',
+
+            // Onboarding (phase 6)
+            'onboarding.view',
+            'onboarding.create',
+            'onboarding.update',
+            'onboarding.complete',
+            'onboarding.cancel',
+            'onboarding.task.update',
+            'onboarding.task.verify',
+            'onboarding.template.view',
+            'onboarding.template.create',
+            'onboarding.template.update',
+            'onboarding.view_own',
+            'onboarding.update_own',
+
+            // Recruitment
+            'recruitment.requisition.view',
+            'recruitment.requisition.create',
+            'recruitment.requisition.update',
+            'recruitment.requisition.submit',
+            'recruitment.requisition.approve',
+            'recruitment.requisition.cancel',
+            'recruitment.vacancy.view',
+            'recruitment.vacancy.create',
+            'recruitment.vacancy.update',
+            'recruitment.vacancy.publish',
+            'recruitment.vacancy.close',
 
             // Dashboard
             'dashboard.view',
@@ -709,6 +910,7 @@ class RolesAndPermissionsSeeder extends Seeder
             'report.attendance',
             'report.leave',
             'report.work_schedule',
+            'report.recruitment',
         ]);
 
         /*
@@ -718,6 +920,64 @@ class RolesAndPermissionsSeeder extends Seeder
         */
 
         $this->seedDefaultPermissions($hrStaff, [
+
+            // Recruitment: applicants and pipeline (no settings)
+            'recruitment.applicant.view',
+            'recruitment.applicant.create',
+            'recruitment.applicant.update',
+            'recruitment.application.view',
+            'recruitment.application.create',
+            'recruitment.application.move_stage',
+            'recruitment.application.reject',
+            'recruitment.application.withdraw',
+            'recruitment.screening.view',
+            'recruitment.screening.create',
+            'recruitment.screening.update',
+            'recruitment.shortlist.create',
+
+            // Recruitment phase 3 (interviews, assessments, evaluations)
+            'recruitment.interview.view',
+            'recruitment.interview.create',
+            'recruitment.interview.update',
+            'recruitment.assessment.view',
+            'recruitment.assessment.create',
+            'recruitment.assessment.update',
+            'recruitment.evaluation.view',
+
+            // Recruitment phase 4 (selection decisions and offer approval stay with HR management)
+            'recruitment.selection.view',
+            'recruitment.offer.view',
+            'recruitment.offer.create',
+            'recruitment.offer.update',
+            'recruitment.offer.issue',
+            'recruitment.offer.respond',
+            'recruitment.offer.withdraw',
+
+            // Recruitment phase 5 (convert an accepted candidate; also needs employee.create and employee_movement.create)
+            'recruitment.conversion.view',
+            'recruitment.conversion.create',
+
+            // Onboarding (phase 6) — cancelling and templates stay with HR management
+            'onboarding.view',
+            'onboarding.create',
+            'onboarding.update',
+            'onboarding.complete',
+            'onboarding.task.update',
+            'onboarding.task.verify',
+            'onboarding.template.view',
+            'onboarding.view_own',
+            'onboarding.update_own',
+
+            // Recruitment (no approving; no closing/cancelling vacancies)
+            'recruitment.requisition.view',
+            'recruitment.requisition.create',
+            'recruitment.requisition.update',
+            'recruitment.requisition.submit',
+            'recruitment.requisition.cancel',
+            'recruitment.vacancy.view',
+            'recruitment.vacancy.create',
+            'recruitment.vacancy.update',
+            'recruitment.vacancy.publish',
 
             // Dashboard
             'dashboard.view',
@@ -824,6 +1084,7 @@ class RolesAndPermissionsSeeder extends Seeder
             'report.attendance',
             'report.leave',
             'report.work_schedule',
+            'report.recruitment',
         ]);
 
         /*
@@ -879,6 +1140,10 @@ class RolesAndPermissionsSeeder extends Seeder
         // Leave access only. The payroll/compensation permissions above do not exist yet.
         $this->seedDefaultPermissions($payroll, [
 
+            // Onboarding self-service (own onboarding and tasks assigned to me)
+            'onboarding.view_own',
+            'onboarding.update_own',
+
             // Self-service (own employee record only)
             'employee.view_own',
             'employee.update_own',
@@ -921,6 +1186,17 @@ class RolesAndPermissionsSeeder extends Seeder
         */
 
         $this->seedDefaultPermissions($supervisor, [
+
+            // Onboarding self-service (own onboarding and tasks assigned to me)
+            'onboarding.view_own',
+            'onboarding.update_own',
+
+            // Recruitment: own requisitions and assigned approval steps only (policy-scoped)
+            'recruitment.requisition.create',
+            'recruitment.requisition.update',
+            'recruitment.requisition.submit',
+            'recruitment.requisition.cancel',
+            'recruitment.requisition.approve',
 
             // Dashboard
             'dashboard.view',
@@ -976,6 +1252,10 @@ class RolesAndPermissionsSeeder extends Seeder
         */
 
         $this->seedDefaultPermissions($employee, [
+
+            // Onboarding self-service (own onboarding and tasks assigned to me)
+            'onboarding.view_own',
+            'onboarding.update_own',
 
             // Dashboard
             'dashboard.view',

@@ -9,6 +9,11 @@ class LogSuccessfulLogin
 {
     public function handle(Login $event)
     {
+        // Careers-portal candidates (guard "applicant") are not HRMS users; this log is for employee/HR logins only.
+        if ($event->guard === 'applicant') {
+            return;
+        }
+
         AuthLog::create([
             'auth_role' => $event->user->roles->pluck('name')->implode(', '), // if using spatie roles
             'auth_type' => 'login',

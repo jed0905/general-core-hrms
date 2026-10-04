@@ -20,6 +20,19 @@ class EmployeePolicy
             || ($this->isSelf($user, $employee) && $user->can('employee.view_own'));
     }
 
+    public function create(User $user): bool
+    {
+        return $user->can('employee.create');
+    }
+
+    /**
+     * Full HR edit of the employee record (self-service uses updateContactDetails).
+     */
+    public function update(User $user, Employee $employee): bool
+    {
+        return $user->can('employee.update');
+    }
+
     /**
      * Self-service updates are limited to contact details by the form request.
      */

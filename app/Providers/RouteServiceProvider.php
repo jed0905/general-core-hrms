@@ -28,6 +28,14 @@ class RouteServiceProvider extends ServiceProvider
             return Limit::perMinute(60)->by($request->user()?->id ?: $request->ip());
         });
 
+        // Careers portal (public): generous for browsing, strict for sign-in/registration/reset, per-candidate for applying.
+        RateLimiter::for('careers-browse', fn (Request $request) => Limit::perMinute(120)->by($request->ip()));
+        RateLimiter::for('careers-auth', fn (Request $request) => [
+            Limit::perMinute(10)->by('ip:'.$request->ip()),
+            Limit::perMinute(5)->by('email:'.mb_strtolower((string) $request->input('email'))),
+        ]);
+        RateLimiter::for('careers-apply', fn (Request $request) => Limit::perMinute(10)->by('applicant:'.($request->user('applicant')?->id ?: $request->ip())));
+
         $this->routes(function () {
             Route::middleware('api')
                 ->prefix('api')
@@ -35,6 +43,10 @@ class RouteServiceProvider extends ServiceProvider
 
             Route::middleware('web')
                 ->group(base_path('routes/web.php'));
+
+            // Public careers portal: no employee login; candidates use the "applicant" guard.
+            Route::middleware('web')
+                ->group(base_path('routes/Careers/web.php'));
 
             // Administration Routes
             Route::middleware(['auth', 'web'])
@@ -58,6 +70,10 @@ class RouteServiceProvider extends ServiceProvider
             // Core HR Reports
             Route::middleware(['auth', 'web'])
                 ->group(base_path('routes/Reports/web.php'));
+
+            // Talent & Recruitment
+            Route::middleware(['auth', 'web'])
+                ->group(base_path('routes/Recruitment/web.php'));
         });
     }
 }

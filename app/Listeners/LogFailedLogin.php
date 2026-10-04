@@ -9,6 +9,11 @@ class LogFailedLogin
 {
     public function handle(Failed $event)
     {
+        // Careers-portal candidates (guard "applicant") are not HRMS users; this log is for employee/HR logins only.
+        if ($event->guard === 'applicant') {
+            return;
+        }
+
         $user = $event->user;
         $roleNames = null;
 

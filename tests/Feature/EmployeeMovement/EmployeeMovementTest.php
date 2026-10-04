@@ -242,6 +242,32 @@ class EmployeeMovementTest extends EmployeeMovementTestCase
     }
 
     #[Test]
+    public function a_future_dated_hiring_records_the_assignment_and_still_changes_nothing(): void
+    {
+        $employee = $this->staffMember();
+        $this->travelTo('2026-09-25 10:00:00');
+
+        $this->record($this->userWithRole('hr_manager'), $this->payload($employee, 'hiring', [], ['effective_date' => '2026-10-01', 'reference_number' => 'OFF-2026-00042']))
+            ->assertSessionHasNoErrors();
+
+        // Scheduled, but not an empty record: it holds the assignment the employee is hired into.
+        $movement = EmployeeMovement::sole();
+        $this->assertSame([EmployeeMovement::STATUS_SCHEDULED, [], null], [$movement->status, $movement->changed_fields, $movement->to_status]);
+        $this->assertSame([$this->it->id, $this->junior->id, $this->regular->id], [$movement->to_department_id, $movement->to_job_title_id, $movement->to_employment_status_id]);
+        $this->assertSame(['Information Technology', 'Junior Developer', 'Regular'], [$movement->snapshot['to']['department'], $movement->snapshot['to']['job_title'], $movement->snapshot['to']['employment_status']]);
+        $this->assertSame($movement->snapshot['from'], $movement->snapshot['to'], 'no change is requested');
+
+        // HR changes the employee before the start date; applying the hiring changes nothing back.
+        $employee->update(['department_id' => $this->hr->id, 'status' => 'on_leave']);
+        $this->travelTo('2026-10-01 00:05:00');
+        $this->assertSame(1, app(EmployeeMovementService::class)->applyDue());
+
+        $movement->refresh();
+        $this->assertSame([EmployeeMovement::STATUS_EFFECTIVE, $this->hr->id, $this->hr->id], [$movement->status, $movement->from_department_id, $movement->to_department_id]);
+        $this->assertSame([$this->hr->id, 'on_leave'], [$employee->fresh()->department_id, $employee->fresh()->status], 'the hiring never overwrites the employee');
+    }
+
+    #[Test]
     public function due_scheduled_movements_apply_before_a_new_one_is_recorded(): void
     {
         $hr = $this->userWithRole('hr_director');

@@ -743,7 +743,7 @@
                         variant="outlined"
                         density="compact"
                         :error-messages="
-                          form.errors[`work_experience.${index}.start_date`]
+                          form.errors[`work_experience.${index}.from`]
                         "
                       />
                     </v-col>
@@ -756,20 +756,22 @@
                         variant="outlined"
                         density="compact"
                         :error-messages="
-                          form.errors[`work_experience.${index}.end_date`]
+                          form.errors[`work_experience.${index}.to`]
                         "
                       />
                     </v-col>
 
                     <v-col cols="12">
                       <v-textarea
-                        v-model="exp.description"
+                        v-model="exp.notes"
                         label="Roles & Responsibilities"
                         rows="2"
+                        counter="255"
+                        maxlength="255"
                         variant="outlined"
                         density="compact"
                         :error-messages="
-                          form.errors[`work_experience.${index}.description`]
+                          form.errors[`work_experience.${index}.notes`]
                         "
                       />
                     </v-col>
@@ -905,7 +907,7 @@ export default {
                   job_title: "",
                   from: null,
                   to: null,
-                  description: "",
+                  notes: "",
                 },
               ],
       }),
@@ -958,7 +960,7 @@ export default {
         job_title: "",
         from: null,
         to: null,
-        description: "",
+        notes: "",
       });
       this.showToast("Added new experience row", "info");
     },

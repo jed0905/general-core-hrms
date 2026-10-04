@@ -113,6 +113,9 @@
         <v-tab value="experience" prepend-icon="mdi-history">
           Experience ({{ employee.work_experience?.length || 0 }})
         </v-tab>
+        <v-tab v-if="can.viewDocuments" value="documents" prepend-icon="mdi-file-document-multiple-outline">
+          Documents ({{ documents.length }})
+        </v-tab>
       </v-tabs>
 
       <!-- Tab Content Windows -->
@@ -310,7 +313,7 @@
                     </span>
                   </div>
                   <p class="text-body-2 text-medium-emphasis mb-0">
-                    {{ exp.description || 'No description provided.' }}
+                    {{ exp.notes || 'No description provided.' }}
                   </p>
                 </div>
               </div>
@@ -320,6 +323,16 @@
             </v-card-text>
           </v-card>
         </v-window-item>
+
+        <!-- TAB: Documents -->
+        <v-window-item v-if="can.viewDocuments" value="documents">
+          <EmployeeDocuments
+            :employee="employee"
+            :documents="documents"
+            :document-types="documentTypes"
+            :can="can"
+          />
+        </v-window-item>
       </v-window>
     </v-container>
   </SidebarLayout>
@@ -328,6 +341,7 @@
 <script>
 import { Head, Link } from "@inertiajs/vue3";
 import SidebarLayout from "@/Layouts/SidebarLayout.vue";
+import EmployeeDocuments from "@/components/People/EmployeeDocuments.vue";
 
 export default {
   name: "EmployeeShow",
@@ -336,12 +350,25 @@ export default {
     SidebarLayout,
     Head,
     Link,
+    EmployeeDocuments,
   },
 
   props: {
     employee: {
       type: Object,
       required: true,
+    },
+    documents: {
+      type: Array,
+      default: () => [],
+    },
+    documentTypes: {
+      type: Array,
+      default: () => [],
+    },
+    can: {
+      type: Object,
+      default: () => ({}),
     },
   },
 

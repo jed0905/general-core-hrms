@@ -130,8 +130,10 @@
                       <v-col cols="12" sm="6">
                         <v-text-field
                           v-model="form.employee_number"
-                          label="Employee ID / Number *"
-                          placeholder="e.g. EMP-2026-001"
+                          :label="employeeNumber.auto ? 'Employee ID / Number' : 'Employee ID / Number *'"
+                          :placeholder="employeeNumber.auto && employeeNumber.preview ? `Auto: ${employeeNumber.preview}` : ''"
+                          :hint="employeeNumber.auto ? 'Leave blank to assign the next number automatically.' : ''"
+                          persistent-hint
                           variant="outlined"
                           density="compact"
                           :error-messages="form.errors.employee_number"
@@ -676,6 +678,7 @@
                         label="Company Name"
                         variant="outlined"
                         density="compact"
+                        :error-messages="form.errors[`work_experience.${index}.company`]"
                       />
                     </v-col>
 
@@ -685,36 +688,42 @@
                         label="Job Title / Position"
                         variant="outlined"
                         density="compact"
+                        :error-messages="form.errors[`work_experience.${index}.job_title`]"
                       />
                     </v-col>
 
                     <v-col cols="12" sm="6">
                       <v-text-field
-                        v-model="exp.start_date"
+                        v-model="exp.from"
                         type="date"
                         label="Start Date"
                         variant="outlined"
                         density="compact"
+                        :error-messages="form.errors[`work_experience.${index}.from`]"
                       />
                     </v-col>
 
                     <v-col cols="12" sm="6">
                       <v-text-field
-                        v-model="exp.end_date"
+                        v-model="exp.to"
                         type="date"
                         label="End Date"
                         variant="outlined"
                         density="compact"
+                        :error-messages="form.errors[`work_experience.${index}.to`]"
                       />
                     </v-col>
 
                     <v-col cols="12">
                       <v-textarea
-                        v-model="exp.description"
+                        v-model="exp.notes"
                         label="Roles & Responsibilities"
                         rows="2"
+                        counter="255"
+                        maxlength="255"
                         variant="outlined"
                         density="compact"
+                        :error-messages="form.errors[`work_experience.${index}.notes`]"
                       />
                     </v-col>
                   </v-row>
@@ -768,6 +777,10 @@ export default {
     options: {
       type: Object,
       default: () => ({}),
+    },
+    employeeNumber: {
+      type: Object,
+      default: () => ({ auto: false, preview: null }),
     },
   },
 
@@ -828,9 +841,9 @@ export default {
           {
             company: "",
             job_title: "",
-            start_date: null,
-            end_date: null,
-            description: "",
+            from: null,
+            to: null,
+            notes: "",
           },
         ],
       }),
@@ -877,9 +890,9 @@ export default {
       this.form.work_experience.push({
         company: "",
         job_title: "",
-        start_date: null,
-        end_date: null,
-        description: "",
+        from: null,
+        to: null,
+        notes: "",
       });
     },
 

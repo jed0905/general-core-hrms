@@ -16,6 +16,20 @@ use App\Services\Reports\Employee\NewHiresReport;
 use App\Services\Reports\Leave\LeaveApplicationsReport;
 use App\Services\Reports\Leave\LeaveBalanceReport;
 use App\Services\Reports\Leave\LeaveUsageReport;
+use App\Services\Reports\Recruitment\AssessmentEvaluationReport;
+use App\Services\Reports\Recruitment\CareersPortalReport;
+use App\Services\Reports\Recruitment\ConversionReport;
+use App\Services\Reports\Recruitment\InterviewReport;
+use App\Services\Reports\Recruitment\OfferReport;
+use App\Services\Reports\Recruitment\RecruitmentFunnelReport;
+use App\Services\Reports\Recruitment\RecruitmentSourceReport;
+use App\Services\Reports\Recruitment\RecruitmentWorkloadReport;
+use App\Services\Reports\Recruitment\ScreeningReport;
+use App\Services\Reports\Recruitment\SelectionReport;
+use App\Services\Reports\Recruitment\TimeToFillReport;
+use App\Services\Reports\Recruitment\TimeToHireReport;
+use App\Services\Reports\Recruitment\VacancyAgingReport;
+use App\Services\Reports\Recruitment\VacancyReport;
 use App\Services\Reports\UserAccess\AccountMatchingReport;
 use App\Services\Reports\UserAccess\RolePermissionsReport;
 use App\Services\Reports\UserAccess\UserAccountsReport;
@@ -33,6 +47,7 @@ class ReportRegistry
         'work_schedule' => ['title' => 'Work Schedule', 'permission' => 'report.work_schedule'],
         'attendance' => ['title' => 'Attendance', 'permission' => 'report.attendance'],
         'leave' => ['title' => 'Leave', 'permission' => 'report.leave'],
+        'recruitment' => ['title' => 'Recruitment', 'permission' => 'report.recruitment'],
         'user_access' => ['title' => 'User & Access', 'permission' => 'report.user_access'],
     ];
 
@@ -55,6 +70,20 @@ class ReportRegistry
         LeaveApplicationsReport::class,
         LeaveUsageReport::class,
         LeaveBalanceReport::class,
+        RecruitmentFunnelReport::class,
+        VacancyReport::class,
+        VacancyAgingReport::class,
+        RecruitmentSourceReport::class,
+        ScreeningReport::class,
+        InterviewReport::class,
+        AssessmentEvaluationReport::class,
+        SelectionReport::class,
+        OfferReport::class,
+        TimeToFillReport::class,
+        TimeToHireReport::class,
+        ConversionReport::class,
+        RecruitmentWorkloadReport::class,
+        CareersPortalReport::class,
         UserAccountsReport::class,
         RolePermissionsReport::class,
         AccountMatchingReport::class,

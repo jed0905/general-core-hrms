@@ -2,6 +2,7 @@
 
 namespace Database\Seeders\Demo;
 
+use App\Models\Applicant;
 use App\Models\CorporateBranding;
 use App\Models\Employee;
 use App\Models\EmployeeAttendanceLog;
@@ -35,12 +36,15 @@ use App\Services\UserService;
 use App\Services\WorkScheduleService;
 use Carbon\Carbon;
 use Carbon\CarbonPeriod;
+use Database\Seeders\EmployeeMovementTypeSeeder;
+use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use RuntimeException;
+use Spatie\Permission\Models\Role;
 
 /**
  * Fictional "Acme Digital Solutions, Inc." demo environment.
@@ -54,9 +58,15 @@ use RuntimeException;
  *
  * Runs once: it refuses to run if the Acme employees already exist. All
  * writes happen in one transaction. Existing records are not deleted.
+ *
+ * Recruitment (SeedsAcmeRecruitment) is seeded in its own transaction after
+ * the Core HR data, also once. On a database that already has the Acme Core
+ * HR data but no recruitment demo, only the recruitment demo is added.
  */
 class AcmeDemoSeeder extends Seeder
 {
+    use SeedsAcmeRecruitment;
+
     private const MARKER = 'ACME-0001';
 
     /** Last day with attendance punches; the demo "today" is the real today. */
@@ -92,35 +102,80 @@ class AcmeDemoSeeder extends Seeder
             throw new RuntimeException('The Acme demo seeder must not run in production.');
         }
 
-        if (Employee::where('employee_number', self::MARKER)->exists()) {
+        $coreExists = Employee::where('employee_number', self::MARKER)->exists();
+        $recruitmentExists = Applicant::where('normalized_email', self::RECRUITMENT_MARKER)->exists();
+
+        if ($coreExists && $recruitmentExists) {
             $this->command?->warn('Acme demo data already exists; nothing was changed.');
 
             return;
         }
 
-        $this->password = 'Acme-'.Str::password(10, symbols: false).'!';
-        mt_srand(20261003);
+        $this->prerequisites();
 
         try {
-            DB::transaction(function () {
-                $this->organization();
-                $this->structure();
-                $this->timeConfiguration();
-                $this->people();
-                $this->accounts();
-                $this->movements();
-                $this->scheduleAssignments();
-                $this->leaveConfiguration();
-                $this->leaveBalances();
-                $this->leaveScenarios();
-                $this->attendance();
-            });
+            if ($coreExists) {
+                $this->loadCore();
+            } else {
+                $this->password = 'Acme-'.Str::password(10, symbols: false).'!';
+                mt_srand(20261003);
+
+                DB::transaction(function () {
+                    $this->organization();
+                    $this->structure();
+                    $this->timeConfiguration();
+                    $this->people();
+                    $this->accounts();
+                    $this->movements();
+                    $this->scheduleAssignments();
+                    $this->leaveConfiguration();
+                    $this->leaveBalances();
+                    $this->leaveScenarios();
+                    $this->attendance();
+                });
+
+                $this->command?->info('Acme demo environment created.');
+                $this->command?->info('Demo password for every Acme account: '.$this->password);
+            }
+
+            $this->recruitment();
         } finally {
             Carbon::setTestNow();
         }
 
-        $this->command?->info('Acme demo environment created.');
-        $this->command?->info('Demo password for every Acme account: '.$this->password);
+        if ($coreExists) {
+            $this->command?->info('Demo password for the new careers-portal accounts: '.$this->password);
+        }
+    }
+
+    /**
+     * Reference data the demo relies on (both seeders are idempotent).
+     */
+    private function prerequisites(): void
+    {
+        if (! Role::where('name', 'hr_director')->where('guard_name', 'web')->exists()) {
+            $this->call(RolesAndPermissionsSeeder::class);
+        }
+
+        if (! EmployeeMovementType::where('code', 'hiring')->exists()) {
+            $this->call(EmployeeMovementTypeSeeder::class);
+        }
+    }
+
+    /**
+     * The Acme employees and accounts from an earlier run (same keys as roster() and accountPlan()).
+     */
+    private function loadCore(): void
+    {
+        $n = 0;
+
+        foreach (array_keys($this->roster()) as $key) {
+            $this->employees[$key] = Employee::where('employee_number', sprintf('ACME-%04d', ++$n))->firstOrFail();
+        }
+
+        foreach ($this->accountPlan() as $key => [$username]) {
+            $this->users[$key] = User::where('username', $username)->firstOrFail();
+        }
     }
 
     // ------------------------------------------------------------------
@@ -408,7 +463,22 @@ class AcmeDemoSeeder extends Seeder
     {
         $service = app(UserService::class);
 
-        foreach ([
+        foreach ($this->accountPlan() as $key => [$username, $roles]) {
+            $this->users[$key] = $service->createUser([
+                'username' => $username,
+                'password' => $this->password,
+                'employee_id' => $this->employees[$key]->id,
+                'roles' => $roles,
+            ]);
+        }
+    }
+
+    /**
+     * employee key => [username, roles]
+     */
+    private function accountPlan(): array
+    {
+        return [
             'hrm' => ['patricia.mendoza', ['hr_director']],
             'hro' => ['carlo.reyes', ['hr_staff']],
             'ceo' => ['victoria.santos', ['supervisor']],
@@ -427,14 +497,7 @@ class AcmeDemoSeeder extends Seeder
             'csr1' => ['andrea.morales', ['employee']],
             'dev1' => ['kevin.lim', ['employee']],
             'dev2' => ['bea.gonzales', ['employee']],
-        ] as $key => [$username, $roles]) {
-            $this->users[$key] = $service->createUser([
-                'username' => $username,
-                'password' => $this->password,
-                'employee_id' => $this->employees[$key]->id,
-                'roles' => $roles,
-            ]);
-        }
+        ];
     }
 
     // ------------------------------------------------------------------

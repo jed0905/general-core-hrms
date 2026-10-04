@@ -13,7 +13,13 @@ use App\Http\Controllers\Web\People\EmployeePersonalController;
 use App\Http\Controllers\Web\People\EmploymentStatusController;
 use App\Http\Controllers\Web\People\JobTitleController;
 use App\Http\Controllers\Web\People\MyEmploymentHistoryController;
+use App\Http\Controllers\Web\People\MyOnboardingController;
 use App\Http\Controllers\Web\People\MyProfileController;
+use App\Http\Controllers\Web\People\OnboardingController;
+use App\Http\Controllers\Web\People\OnboardingTaskController;
+use App\Http\Controllers\Web\People\OnboardingTemplateController;
+use App\Models\Onboarding;
+use App\Models\OnboardingTemplate;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware(['auth', 'verified'])->prefix('people/employees')->name('people.employee.')->group(function () {
@@ -58,6 +64,15 @@ Route::middleware(['auth', 'verified'])->prefix('people/employees')->name('peopl
     Route::patch('/{employee}/restore', [EmployeeController::class, 'restore'])
         ->middleware('can:employee.restore')
         ->name('restore');
+
+    // Documents (private disk; listed on the profile page, files served only through these routes)
+    Route::prefix('{employee}/documents')->name('documents.')->scopeBindings()->group(function () {
+        Route::post('/', [EmployeeDocumentController::class, 'store'])->middleware('can:employee.documents.create')->name('store');
+        Route::put('/{document}', [EmployeeDocumentController::class, 'update'])->middleware('can:employee.documents.update')->name('update');
+        Route::delete('/{document}', [EmployeeDocumentController::class, 'destroy'])->middleware('can:employee.documents.delete')->name('destroy');
+        Route::get('/{document}/download', [EmployeeDocumentController::class, 'download'])->middleware('can:employee.documents.view')->name('download');
+        Route::get('/{document}/view', [EmployeeDocumentController::class, 'view'])->middleware('can:employee.documents.view')->name('view');
+    });
 
     /*
     |--------------------------------------------------------------------------
@@ -249,3 +264,47 @@ Route::middleware(['auth', 'verified'])
     ->get('people/my-employment-history', [MyEmploymentHistoryController::class, 'index'])
     ->middleware('can:employee_movement.view_own')
     ->name('people.my-employment-history.index');
+
+/*
+|--------------------------------------------------------------------------
+| Employee onboarding (phase 6)
+|--------------------------------------------------------------------------
+| HR manages cases and templates (onboarding.*). Task actions are shared:
+| OnboardingTaskPolicy lets HR, the employee (own tasks) or the snapshotted
+| supervisor/designated employee act. Self-service always uses the
+| logged-in user's own employee record.
+*/
+Route::middleware(['auth', 'verified'])->prefix('people/onboarding')->name('people.onboarding.')->group(function () {
+    Route::get('/', [OnboardingController::class, 'index'])->middleware('can:viewAny,'.Onboarding::class)->name('index');
+    Route::get('/create', [OnboardingController::class, 'create'])->middleware('can:create,'.Onboarding::class)->name('create');
+    Route::post('/', [OnboardingController::class, 'store'])->middleware('can:create,'.Onboarding::class)->name('store');
+
+    Route::prefix('tasks/{onboardingTask}')->name('tasks.')->group(function () {
+        Route::post('/start', [OnboardingTaskController::class, 'start'])->middleware('can:act,onboardingTask')->name('start');
+        Route::post('/complete', [OnboardingTaskController::class, 'complete'])->middleware('can:act,onboardingTask')->name('complete');
+        Route::post('/verify', [OnboardingTaskController::class, 'verify'])->middleware('can:verify,onboardingTask')->name('verify');
+        Route::post('/skip', [OnboardingTaskController::class, 'skip'])->middleware('can:skip,onboardingTask')->name('skip');
+    });
+
+    Route::prefix('{onboarding}')->group(function () {
+        Route::get('/', [OnboardingController::class, 'show'])->middleware('can:view,onboarding')->name('show');
+        Route::post('/complete', [OnboardingController::class, 'complete'])->middleware('can:complete,onboarding')->name('complete');
+        Route::post('/cancel', [OnboardingController::class, 'cancel'])->middleware('can:cancel,onboarding')->name('cancel');
+        Route::post('/tasks', [OnboardingController::class, 'storeTask'])->middleware('can:update,onboarding')->name('tasks.store');
+        Route::post('/notes', [OnboardingController::class, 'storeNote'])->middleware('can:update,onboarding')->name('notes.store');
+    });
+});
+
+Route::middleware(['auth', 'verified'])->prefix('people/onboarding-templates')->name('people.onboarding-templates.')->group(function () {
+    Route::get('/', [OnboardingTemplateController::class, 'index'])->middleware('can:viewAny,'.OnboardingTemplate::class)->name('index');
+    Route::get('/create', [OnboardingTemplateController::class, 'create'])->middleware('can:create,'.OnboardingTemplate::class)->name('create');
+    Route::post('/', [OnboardingTemplateController::class, 'store'])->middleware('can:create,'.OnboardingTemplate::class)->name('store');
+    Route::get('/{onboardingTemplate}/edit', [OnboardingTemplateController::class, 'edit'])->middleware('can:update,onboardingTemplate')->name('edit');
+    Route::put('/{onboardingTemplate}', [OnboardingTemplateController::class, 'update'])->middleware('can:update,onboardingTemplate')->name('update');
+});
+
+// Employee self-service: own onboarding, and tasks assigned to me.
+Route::middleware(['auth', 'verified'])
+    ->get('people/my-onboarding', [MyOnboardingController::class, 'index'])
+    ->middleware('can:viewMine,'.Onboarding::class)
+    ->name('people.my-onboarding.index');

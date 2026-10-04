@@ -437,6 +437,13 @@ export default {
               permission: "employee_movement.view_own",
               routePrefix: "people.my-employment-history",
             },
+            {
+              title: "My Onboarding",
+              icon: "mdi-clipboard-check-outline",
+              route: "people.my-onboarding.index",
+              permission: "onboarding.view_own",
+              routePrefix: "people.my-onboarding",
+            },
             { header: "My Leaves" },
             {
               title: "Apply Leave",
@@ -506,6 +513,20 @@ export default {
               route: "people.employee-movement-types.index",
               permission: "employee_movement_type.view",
               routePrefix: "people.employee-movement-types",
+            },
+            {
+              title: "Onboarding",
+              icon: "mdi-account-check-outline",
+              route: "people.onboarding.index",
+              permission: "onboarding.view",
+              routePrefix: "people.onboarding.",
+            },
+            {
+              title: "Onboarding Templates",
+              icon: "mdi-clipboard-list-outline",
+              route: "people.onboarding-templates.index",
+              permission: "onboarding.template.view",
+              routePrefix: "people.onboarding-templates",
             },
           ],
         },
@@ -611,8 +632,72 @@ export default {
           items: [],
         },
 
+        // Talent & Recruitment: visibility comes from recruitmentAccess (permissions
+        // plus assignments such as approver or hiring manager), not a single permission.
+        recruitment: {
+          title: "Talent & Recruitment",
+          items: [
+            {
+              title: "Dashboard",
+              icon: "mdi-account-search-outline",
+              route: "recruitment.dashboard",
+              access: "dashboard",
+              routePrefix: "recruitment.dashboard",
+            },
+            {
+              title: "Job Requisitions",
+              icon: "mdi-file-document-edit-outline",
+              route: "recruitment.requisitions.index",
+              access: "requisitions",
+              routePrefix: "recruitment.requisitions",
+            },
+            {
+              title: "Vacancies",
+              icon: "mdi-briefcase-search-outline",
+              route: "recruitment.vacancies.index",
+              access: "vacancies",
+              routePrefix: "recruitment.vacancies",
+            },
+            {
+              title: "Applicants",
+              icon: "mdi-account-multiple-outline",
+              route: "recruitment.applicants.index",
+              access: "applicants",
+              routePrefix: "recruitment.applicants",
+            },
+            {
+              title: "Applications",
+              icon: "mdi-file-account-outline",
+              route: "recruitment.applications.index",
+              access: "applications",
+              routePrefix: "recruitment.applications",
+            },
+            {
+              title: "Offers",
+              icon: "mdi-file-sign",
+              route: "recruitment.offers.index",
+              access: "offers",
+              routePrefix: "recruitment.offers",
+            },
+            {
+              title: "My Interviews",
+              icon: "mdi-calendar-account-outline",
+              route: "recruitment.interviews.mine",
+              access: "myInterviews",
+              routePrefix: "recruitment.interviews",
+            },
+            {
+              title: "Recruitment Settings",
+              icon: "mdi-cog-outline",
+              route: "recruitment.settings.index",
+              access: "settings",
+              routePrefix: "recruitment.settings",
+            },
+          ],
+        },
+
         // Core HR reports: each item needs its category permission
-        // (report.employee, report.attendance, ...); self-service *_own
+        // (report.employee, report.attendance, report.recruitment, ...); self-service *_own
         // permissions never show these.
         reports: {
           title: "Reports",
@@ -733,6 +818,105 @@ export default {
               permission: "report.leave",
               routePrefix: "reports.leave-balance.",
             },
+            { header: "Recruitment" },
+            {
+              title: "Recruitment Funnel",
+              icon: "mdi-filter-variant",
+              route: "reports.recruitment-funnel.show",
+              permission: "report.recruitment",
+              routePrefix: "reports.recruitment-funnel.",
+            },
+            {
+              title: "Vacancies & Requisitions",
+              icon: "mdi-briefcase-search-outline",
+              route: "reports.recruitment-vacancies.show",
+              permission: "report.recruitment",
+              routePrefix: "reports.recruitment-vacancies.",
+            },
+            {
+              title: "Vacancy Aging",
+              icon: "mdi-timer-sand",
+              route: "reports.vacancy-aging.show",
+              permission: "report.recruitment",
+              routePrefix: "reports.vacancy-aging.",
+            },
+            {
+              title: "Application Sources",
+              icon: "mdi-source-branch",
+              route: "reports.recruitment-sources.show",
+              permission: "report.recruitment",
+              routePrefix: "reports.recruitment-sources.",
+            },
+            {
+              title: "Screening",
+              icon: "mdi-account-search-outline",
+              route: "reports.recruitment-screening.show",
+              permission: "report.recruitment",
+              routePrefix: "reports.recruitment-screening.",
+            },
+            {
+              title: "Interviews",
+              icon: "mdi-account-voice",
+              route: "reports.recruitment-interviews.show",
+              permission: "report.recruitment",
+              routePrefix: "reports.recruitment-interviews.",
+            },
+            {
+              title: "Assessments & Evaluations",
+              icon: "mdi-clipboard-check-outline",
+              route: "reports.recruitment-assessments.show",
+              permission: "report.recruitment",
+              routePrefix: "reports.recruitment-assessments.",
+            },
+            {
+              title: "Selection",
+              icon: "mdi-account-check-outline",
+              route: "reports.recruitment-selection.show",
+              permission: "report.recruitment",
+              routePrefix: "reports.recruitment-selection.",
+            },
+            {
+              title: "Offers",
+              icon: "mdi-file-sign",
+              route: "reports.recruitment-offers.show",
+              permission: "report.recruitment",
+              routePrefix: "reports.recruitment-offers.",
+            },
+            {
+              title: "Time to Fill",
+              icon: "mdi-timer-outline",
+              route: "reports.time-to-fill.show",
+              permission: "report.recruitment",
+              routePrefix: "reports.time-to-fill.",
+            },
+            {
+              title: "Time to Hire",
+              icon: "mdi-timer-check-outline",
+              route: "reports.time-to-hire.show",
+              permission: "report.recruitment",
+              routePrefix: "reports.time-to-hire.",
+            },
+            {
+              title: "Hiring Conversion",
+              icon: "mdi-account-convert-outline",
+              route: "reports.recruitment-conversion.show",
+              permission: "report.recruitment",
+              routePrefix: "reports.recruitment-conversion.",
+            },
+            {
+              title: "Hiring Manager & HR Workload",
+              icon: "mdi-account-group-outline",
+              route: "reports.recruitment-workload.show",
+              permission: "report.recruitment",
+              routePrefix: "reports.recruitment-workload.",
+            },
+            {
+              title: "Careers Portal",
+              icon: "mdi-web",
+              route: "reports.careers-portal.show",
+              permission: "report.recruitment",
+              routePrefix: "reports.careers-portal.",
+            },
             { header: "User & Access" },
             {
               title: "User Accounts",
@@ -797,6 +981,7 @@ export default {
         this.modules.people,
         this.modules.time,
         this.modules.leave,
+        this.modules.recruitment,
         this.modules.payroll,
         this.modules.reports,
         this.modules.administration,
@@ -811,7 +996,7 @@ export default {
           }
 
           const filteredItems = group.items
-            .filter((item) => item.header || this.hasPermission(item.permission))
+            .filter((item) => item.header || this.canSeeItem(item))
             .filter(
               (item, index, items) =>
                 !item.header || (items[index + 1] && !items[index + 1].header)
@@ -833,6 +1018,13 @@ export default {
       const nextTheme = this.isDarkMode ? "light" : "dark";
       this.$vuetify.theme.global.name = nextTheme;
       localStorage.setItem("user_theme_mode", nextTheme);
+    },
+
+    canSeeItem(item) {
+      if (item.access) {
+        return Boolean((this.$page.props.recruitmentAccess || {})[item.access]);
+      }
+      return this.hasPermission(item.permission);
     },
 
     hasPermission(permission) {

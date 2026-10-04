@@ -4,13 +4,16 @@ namespace App\Listeners;
 
 use App\Models\AuthLog;
 use Illuminate\Auth\Events\Logout;
-use Illuminate\Contracts\Queue\ShouldQueue;
-use Illuminate\Queue\InteractsWithQueue;
 
 class LogSuccessfulLogout
 {
     public function handle(Logout $event)
     {
+        // Careers-portal candidates (guard "applicant") are not HRMS users; this log is for employee/HR logins only.
+        if ($event->guard === 'applicant') {
+            return;
+        }
+
         AuthLog::create([
             'auth_role' => $event->user->roles->pluck('name')->implode(', '),
             'auth_type' => 'logout',

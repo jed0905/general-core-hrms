@@ -39,7 +39,7 @@ class CoreHrReportsTest extends ReportsTestCase
             ->assertOk()
             ->assertInertia(fn (AssertableInertia $page) => $page
                 ->component('app/Reports/Index', false)
-                ->where('categories', fn ($categories) => collect($categories)->pluck('key')->all() === ['employee', 'work_schedule', 'attendance', 'leave']));
+                ->where('categories', fn ($categories) => collect($categories)->pluck('key')->all() === ['employee', 'work_schedule', 'attendance', 'leave', 'recruitment']));
 
         foreach (collect(ReportRegistry::REPORTS)->filter(fn ($c) => $c::category() === 'employee') as $class) {
             $this->actingAs($staff)->get($this->showUrl($class::key()))->assertOk();

@@ -3,9 +3,9 @@
 namespace App\Http\Middleware;
 
 use App\Helpers\UserInformationHelper;
-use App\Http\Controllers\Web\Administration\Organization\OrganizationGeneralController;
 use App\Models\CorporateBranding;
 use App\Models\OrganizationGeneralInformation;
+use App\Services\Recruitment\RecruitmentAccess;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Middleware;
@@ -16,6 +16,7 @@ class HandleInertiaRequests extends Middleware
      * The root template that's loaded on the first page visit.
      *
      * @see https://inertiajs.com/server-side-setup#root-template
+     *
      * @var string
      */
     protected $rootView = 'app';
@@ -24,8 +25,6 @@ class HandleInertiaRequests extends Middleware
      * Determines the current asset version.
      *
      * @see https://inertiajs.com/asset-versioning
-     * @param  \Illuminate\Http\Request  $request
-     * @return string|null
      */
     public function version(Request $request): ?string
     {
@@ -36,8 +35,6 @@ class HandleInertiaRequests extends Middleware
      * Defines the props that are shared by default.
      *
      * @see https://inertiajs.com/shared-data
-     * @param  \Illuminate\Http\Request  $request
-     * @return array
      */
     public function share(Request $request): array
     {
@@ -82,6 +79,9 @@ class HandleInertiaRequests extends Middleware
                 'permissions' => $request->user()?->getAllPermissions()->pluck('name') ?? [],
             ],
 
+            // Recruitment areas reachable by permission or assignment (approver, hiring manager); drives the menu.
+            'recruitmentAccess' => fn () => app(RecruitmentAccess::class)->for($request->user()),
+
             'flash' => [
                 'status' => $request->session()->get('status'),
                 'error' => $request->session()->get('error'),
@@ -89,21 +89,22 @@ class HandleInertiaRequests extends Middleware
             ],
             'branding' => function () {
                 $branding = CorporateBranding::first();
+
                 return $branding ? [
-                    'client_logo'     => $branding->client_logo ? Storage::url($branding->client_logo) : null,
-                    'primary_color'   => $branding->primary_color ?? '#1867C0',
+                    'client_logo' => $branding->client_logo ? Storage::url($branding->client_logo) : null,
+                    'primary_color' => $branding->primary_color ?? '#1867C0',
                     'secondary_color' => $branding->secondary_color ?? '#F5F5F5',
                 ] : null;
             },
             'company' => function () {
                 $company = OrganizationGeneralInformation::first();
+
                 return $company ? [
                     'name' => $company->name,
                     'shortcut' => $company->shortcut,
-                    'address' => $company->street1 . ', ' . $company->city . ', ' . $company->state . ', ' . $company->country,
+                    'address' => $company->street1.', '.$company->city.', '.$company->state.', '.$company->country,
                 ] : null;
-            }
-
+            },
 
         ]);
     }
