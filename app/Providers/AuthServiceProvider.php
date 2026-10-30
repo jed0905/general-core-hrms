@@ -11,6 +11,7 @@ use App\Models\ApplicationEvaluation;
 use App\Models\ApplicationInterview;
 use App\Models\ApplicationSelection;
 use App\Models\Employee;
+use App\Models\EmployeeCompensation;
 use App\Models\EmployeeDocument;
 use App\Models\EmployeeMovement;
 use App\Models\JobOffer;
@@ -19,6 +20,9 @@ use App\Models\LeaveApplication;
 use App\Models\Onboarding;
 use App\Models\OnboardingTask;
 use App\Models\OnboardingTemplate;
+use App\Models\PayrollRun;
+use App\Models\PayrollRunEmployee;
+use App\Models\StatutoryRuleVersion;
 use App\Models\User;
 use App\Models\Vacancy;
 use App\Policies\ApplicantDocumentPolicy;
@@ -36,6 +40,10 @@ use App\Policies\OfferPolicy;
 use App\Policies\OnboardingPolicy;
 use App\Policies\OnboardingTaskPolicy;
 use App\Policies\OnboardingTemplatePolicy;
+use App\Policies\Payroll\EmployeeCompensationPolicy;
+use App\Policies\Payroll\PayrollRunPolicy;
+use App\Policies\Payroll\PayslipPolicy;
+use App\Policies\Payroll\StatutoryRuleVersionPolicy;
 use App\Policies\SelectionPolicy;
 use App\Policies\VacancyPolicy;
 use App\Services\Recruitment\RecruitmentAccess;
@@ -68,6 +76,10 @@ class AuthServiceProvider extends ServiceProvider
         OnboardingTask::class => OnboardingTaskPolicy::class,
         OnboardingTemplate::class => OnboardingTemplatePolicy::class,
         EmployeeMovement::class => EmployeeMovementPolicy::class,
+        PayrollRun::class => PayrollRunPolicy::class,
+        PayrollRunEmployee::class => PayslipPolicy::class,
+        StatutoryRuleVersion::class => StatutoryRuleVersionPolicy::class,
+        EmployeeCompensation::class => EmployeeCompensationPolicy::class,
     ];
 
     /**
@@ -79,6 +91,9 @@ class AuthServiceProvider extends ServiceProvider
         $this->registerApplicantGuard();
 
         // Recruitment dashboard: anyone who can reach requisitions or vacancies (by permission or assignment).
+        // Payroll pages reachable with either of two permissions (never by role).
+        Gate::define('viewPayrollEmployees', fn (User $user) => $user->can('payroll.config.view') || $user->can('compensation.view'));
+        Gate::define('accessPayrollInputs', fn (User $user) => $user->can('payroll.input.manage') || $user->can('payroll.input.approve'));
         Gate::define('accessRecruitment', fn (User $user) => app(RecruitmentAccess::class)->for($user)['dashboard']);
         // The method usePersonalAccessTokens() is not defined on the Sanctum facade.
         // Ensure that the Sanctum package is correctly installed and configured.

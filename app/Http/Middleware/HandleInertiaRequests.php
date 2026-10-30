@@ -84,6 +84,8 @@ class HandleInertiaRequests extends Middleware
 
             'flash' => [
                 'status' => $request->session()->get('status'),
+                // Controllers flash ->with('success', ...); the layout shows it (and error) as a snackbar.
+                'success' => $request->session()->get('success'),
                 'error' => $request->session()->get('error'),
                 'psaLoadedData' => $request->session()->get('psaLoadedData'),
             ],

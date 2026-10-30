@@ -16,6 +16,13 @@ use App\Services\Reports\Employee\NewHiresReport;
 use App\Services\Reports\Leave\LeaveApplicationsReport;
 use App\Services\Reports\Leave\LeaveBalanceReport;
 use App\Services\Reports\Leave\LeaveUsageReport;
+use App\Services\Reports\Payroll\PayrollContributionsReport;
+use App\Services\Reports\Payroll\PayrollCostReport;
+use App\Services\Reports\Payroll\PayrollEarningsDeductionsReport;
+use App\Services\Reports\Payroll\PayrollReconciliationReport;
+use App\Services\Reports\Payroll\PayrollRegisterReport;
+use App\Services\Reports\Payroll\PayrollSummaryReport;
+use App\Services\Reports\Payroll\PayrollTaxReport;
 use App\Services\Reports\Recruitment\AssessmentEvaluationReport;
 use App\Services\Reports\Recruitment\CareersPortalReport;
 use App\Services\Reports\Recruitment\ConversionReport;
@@ -49,6 +56,7 @@ class ReportRegistry
         'leave' => ['title' => 'Leave', 'permission' => 'report.leave'],
         'recruitment' => ['title' => 'Recruitment', 'permission' => 'report.recruitment'],
         'user_access' => ['title' => 'User & Access', 'permission' => 'report.user_access'],
+        'payroll' => ['title' => 'Payroll', 'permission' => 'report.payroll'],
     ];
 
     /**
@@ -87,6 +95,13 @@ class ReportRegistry
         UserAccountsReport::class,
         RolePermissionsReport::class,
         AccountMatchingReport::class,
+        PayrollSummaryReport::class,
+        PayrollRegisterReport::class,
+        PayrollEarningsDeductionsReport::class,
+        PayrollContributionsReport::class,
+        PayrollTaxReport::class,
+        PayrollCostReport::class,
+        PayrollReconciliationReport::class,
     ];
 
     public static function resolve(string $key): Report

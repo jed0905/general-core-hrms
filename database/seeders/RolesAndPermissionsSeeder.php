@@ -320,6 +320,8 @@ class RolesAndPermissionsSeeder extends Seeder
             'recruitment.vacancy.publish',
             'recruitment.vacancy.close',
 
+            // Payroll (global core + localizations); see *_add_payroll_permissions
+            ...self::PAYROLL_PERMISSIONS,
         ];
 
         /*
@@ -1284,12 +1286,59 @@ class RolesAndPermissionsSeeder extends Seeder
 
         /*
         |--------------------------------------------------------------------------
+        | Payroll defaults (superadmin already holds everything)
+        |--------------------------------------------------------------------------
+        */
+
+        $rolesByName = compact('hrDirector', 'hrManager', 'hrStaff', 'payroll', 'supervisor', 'employee');
+        foreach (self::PAYROLL_GRANTS as $roleVariable => $permissions) {
+            $this->seedDefaultPermissions($rolesByName[$roleVariable], $permissions);
+        }
+
+        /*
+        |--------------------------------------------------------------------------
         | Clear Permission Cache
         |--------------------------------------------------------------------------
         */
 
         app()[PermissionRegistrar::class]->forgetCachedPermissions();
     }
+
+    /** Payroll permissions; keep in sync with the *_add_payroll_permissions migration. */
+    private const PAYROLL_PERMISSIONS = [
+        'payroll.dashboard.view',
+        'payroll.config.view', 'payroll.config.manage',
+        'compensation.view', 'compensation.create', 'compensation.update', 'compensation.approve',
+        'payroll.view', 'payroll.create', 'payroll.update', 'payroll.calculate', 'payroll.review',
+        'payroll.approve', 'payroll.reject', 'payroll.finalize', 'payroll.reverse', 'payroll.export',
+        'payroll.disburse', 'payroll.input.manage', 'payroll.input.approve',
+        'payroll.statutory_rule.view', 'payroll.statutory_rule.manage', 'payroll.statutory_rule.verify',
+        'payroll.scope.all',
+        'payslip.view', 'payslip.view_own',
+        'report.payroll',
+    ];
+
+    /** Default payroll grants per role variable. Separation of duties: payroll prepares, the HR director approves. */
+    private const PAYROLL_GRANTS = [
+        'hrDirector' => [
+            'payroll.dashboard.view', 'payroll.config.view', 'compensation.view', 'compensation.approve',
+            'payroll.view', 'payroll.approve', 'payroll.reject', 'payroll.finalize', 'payroll.reverse',
+            'payroll.export', 'payroll.statutory_rule.view', 'payroll.statutory_rule.verify',
+            'payroll.scope.all', 'payslip.view', 'payslip.view_own', 'report.payroll',
+        ],
+        'hrManager' => ['compensation.view', 'compensation.create', 'compensation.update', 'payslip.view_own'],
+        'payroll' => [
+            'payroll.dashboard.view', 'payroll.config.view', 'payroll.config.manage',
+            'compensation.view', 'compensation.create', 'compensation.update',
+            'payroll.view', 'payroll.create', 'payroll.update', 'payroll.calculate', 'payroll.review',
+            'payroll.reject', 'payroll.export', 'payroll.disburse', 'payroll.input.manage', 'payroll.input.approve',
+            'payroll.statutory_rule.view', 'payroll.statutory_rule.manage', 'payroll.scope.all',
+            'payslip.view', 'payslip.view_own', 'report.payroll',
+        ],
+        'hrStaff' => ['payslip.view_own'],
+        'supervisor' => ['payslip.view_own'],
+        'employee' => ['payslip.view_own'],
+    ];
 
     /**
      * Apply a role's default permissions only when the role was just created.

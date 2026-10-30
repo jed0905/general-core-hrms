@@ -438,6 +438,13 @@ export default {
               routePrefix: "people.my-employment-history",
             },
             {
+              title: "My Payslips",
+              icon: "mdi-receipt-text-outline",
+              route: "payroll.my-payslips.index",
+              permission: "payslip.view_own",
+              routePrefix: "payroll.my-payslips",
+            },
+            {
               title: "My Onboarding",
               icon: "mdi-clipboard-check-outline",
               route: "people.my-onboarding.index",
@@ -629,7 +636,14 @@ export default {
 
         payroll: {
           title: "Payroll",
-          items: [],
+          items: [
+            { title: "Dashboard", icon: "mdi-view-dashboard-outline", route: "payroll.dashboard", permission: "payroll.dashboard.view", routePrefix: "payroll.dashboard" },
+            { title: "Payroll Runs", icon: "mdi-cash-multiple", route: "payroll.runs.index", permission: "payroll.view", routePrefix: "payroll.runs" },
+            { title: "Inputs", icon: "mdi-clock-edit-outline", route: "payroll.inputs.index", permission: ["payroll.input.manage", "payroll.input.approve"], routePrefix: "payroll.inputs" },
+            { title: "Employees", icon: "mdi-account-cash-outline", route: "payroll.employees.index", permission: ["payroll.config.view", "compensation.view"], routePrefix: "payroll.employees" },
+            { title: "Statutory Rules", icon: "mdi-scale-balance", route: "payroll.statutory-rules.index", permission: "payroll.statutory_rule.view", routePrefix: "payroll.statutory-rules" },
+            { title: "Setup", icon: "mdi-cog-outline", route: "payroll.setup.index", permission: "payroll.config.view", routePrefix: "payroll.setup" },
+          ],
         },
 
         // Talent & Recruitment: visibility comes from recruitmentAccess (permissions
@@ -1029,6 +1043,8 @@ export default {
 
     hasPermission(permission) {
       if (!permission) return true;
+      // An array means "any of these permissions".
+      if (Array.isArray(permission)) return permission.some((p) => this.userPermissions.includes(p));
       return this.userPermissions.includes(permission);
     },
 

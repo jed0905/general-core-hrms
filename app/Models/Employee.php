@@ -54,6 +54,14 @@ class Employee extends Model
         'supervisor_id',
     ];
 
+    /**
+     * Payroll employment assignments (legal entity, pay group, jurisdiction) over time.
+     */
+    public function payrollAssignments(): HasMany
+    {
+        return $this->hasMany(EmploymentAssignment::class);
+    }
+
     public function user()
     {
         return $this->hasMany(User::class);
