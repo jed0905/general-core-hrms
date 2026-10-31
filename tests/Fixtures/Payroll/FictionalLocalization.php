@@ -8,6 +8,7 @@ use App\Services\Payroll\Calculation\PayLine;
 use App\Services\Payroll\Calculation\PayrollContext;
 use App\Services\Payroll\Calculation\PremiumRule;
 use App\Services\Payroll\Calculation\PremiumRuleSet;
+use App\Services\Payroll\Contracts\MapsAttendanceToPremiums;
 use App\Services\Payroll\Contracts\PayrollLocalization;
 use App\Services\Payroll\Rules\Methods\ProgressiveTable;
 use App\Services\Payroll\Rules\Methods\RateWithFloorCeiling;
@@ -24,7 +25,7 @@ use App\Services\Payroll\Support\Decimal;
  *   earnings minus the employee contribution.
  * - XX.PREMIUM (multiplier parameters "overtime", "night").
  */
-class FictionalLocalization implements PayrollLocalization
+class FictionalLocalization implements MapsAttendanceToPremiums, PayrollLocalization
 {
     public function countryCode(): string
     {
@@ -136,6 +137,12 @@ class FictionalLocalization implements PayrollLocalization
             ->map(fn ($label, $category) => new PremiumRule($category, $label, $rule->parameter($category), $rule->id))
             ->values()
             ->all());
+    }
+
+    /** Fictional mapping: overtime -> "overtime", night -> "night", nothing else. */
+    public function attendancePremiumCategory(string $dayType, ?string $holidayType, bool $overtime, bool $night): ?string
+    {
+        return $overtime ? 'overtime' : ($night ? 'night' : null);
     }
 
     public function payslipRequirements(): array

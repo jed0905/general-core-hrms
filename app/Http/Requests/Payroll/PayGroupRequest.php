@@ -29,6 +29,7 @@ class PayGroupRequest extends FormRequest
             'annual_working_days' => ['required', 'decimal:0,4', 'gt:0', 'max:366'],
             'proration_method' => ['required', Rule::in(PayGroup::PRORATION_METHODS)],
             'rounding_mode' => ['required', Rule::in(PayGroup::ROUNDING_MODES)],
+            'time_source' => ['sometimes', Rule::in(PayGroup::TIME_SOURCES)],
             'is_active' => ['boolean'],
         ];
     }

@@ -2,6 +2,8 @@
 
 namespace App\Providers;
 
+use App\Events\PayrollRunFinalized;
+use App\Listeners\LockConsumedAttendanceSummaries;
 use App\Listeners\LogFailedLogin;
 use App\Listeners\LogSuccessfulLogin;
 use App\Listeners\LogSuccessfulLogout;
@@ -35,6 +37,10 @@ class EventServiceProvider extends ServiceProvider
     protected $listen = [
         Registered::class => [
             SendEmailVerificationNotification::class,
+        ],
+
+        PayrollRunFinalized::class => [
+            LockConsumedAttendanceSummaries::class,
         ],
 
         Login::class => [

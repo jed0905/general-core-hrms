@@ -212,7 +212,8 @@
               <v-col cols="6" md="3"><v-text-field v-model="groupForm.annual_working_days" label="Working days per year" variant="outlined" density="compact" hint="Divisor for daily rates (company/localization policy)" persistent-hint :error-messages="groupForm.errors.annual_working_days" /></v-col>
               <v-col cols="6" md="3"><v-select v-model="groupForm.proration_method" :items="optionItems(options.prorationMethods)" label="Proration" variant="outlined" density="compact" :error-messages="groupForm.errors.proration_method" /></v-col>
               <v-col cols="6" md="3"><v-select v-model="groupForm.rounding_mode" :items="optionItems(options.roundingModes)" label="Rounding (non-statutory)" variant="outlined" density="compact" :error-messages="groupForm.errors.rounding_mode" /></v-col>
-              <v-col cols="12"><v-switch v-model="groupForm.is_active" label="Active" color="primary" density="compact" hide-details /></v-col>
+              <v-col cols="12" md="6"><v-select v-model="groupForm.time_source" :items="[{ value: 'manual_inputs', title: 'Payroll time inputs (entered / imported)' }, { value: 'attendance', title: 'Approved attendance summaries' }]" label="Time quantities come from" variant="outlined" density="compact" :error-messages="groupForm.errors.time_source" /></v-col>
+              <v-col cols="12" md="6"><v-switch v-model="groupForm.is_active" label="Active" color="primary" density="compact" hide-details /></v-col>
             </v-row>
           </v-card-text>
           <v-card-actions class="pa-4"><v-spacer /><v-btn variant="text" @click="dialogs.group = false">Cancel</v-btn><v-btn color="primary" variant="flat" :loading="groupForm.processing" @click="saveGroup">Save</v-btn></v-card-actions>
@@ -417,7 +418,7 @@ export default {
         id: g?.id || null, legal_entity_id: g?.legal_entity_id || this.legalEntities[0]?.id || null, code: g?.code || "", name: g?.name || "",
         payroll_country_code: g?.payroll_country_code || null, pay_frequency: g?.pay_frequency || null, pay_currency: g?.pay_currency || null,
         hours_per_day: g ? String(Number(g.hours_per_day)) : "", annual_working_days: g ? String(Number(g.annual_working_days)) : "",
-        proration_method: g?.proration_method || "calendar_days", rounding_mode: g?.rounding_mode || "half_up", is_active: g ? !!g.is_active : true,
+        proration_method: g?.proration_method || "calendar_days", rounding_mode: g?.rounding_mode || "half_up", time_source: g?.time_source || "manual_inputs", is_active: g ? !!g.is_active : true,
       });
       this.dialogs.group = true;
     },

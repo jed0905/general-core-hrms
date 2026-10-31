@@ -19,6 +19,8 @@ class Holiday extends Model
         'code',
         'date',
         'type',
+        'country_code', // null = applies in every jurisdiction
+        'subdivision_code',
         'is_paid',
         'is_working_day',
         'is_recurring',

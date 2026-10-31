@@ -9,6 +9,7 @@ use App\Services\Payroll\Calculation\PayLine;
 use App\Services\Payroll\Calculation\PayrollContext;
 use App\Services\Payroll\Calculation\PremiumRule;
 use App\Services\Payroll\Calculation\PremiumRuleSet;
+use App\Services\Payroll\Contracts\MapsAttendanceToPremiums;
 use App\Services\Payroll\Contracts\PayrollLocalization;
 use App\Services\Payroll\Rules\Methods\BracketLookup;
 use App\Services\Payroll\Rules\Methods\ProgressiveTable;
@@ -28,7 +29,7 @@ use App\Services\Payroll\Support\Decimal;
  * "last_period" (whole monthly amount in the last period paid in the month) or
  * "split" (spread evenly; the last period trues up to the monthly total).
  */
-class PhilippinesLocalization implements PayrollLocalization
+class PhilippinesLocalization implements MapsAttendanceToPremiums, PayrollLocalization
 {
     public const COUNTRY = 'PH';
 
@@ -273,6 +274,34 @@ class PhilippinesLocalization implements PayrollLocalization
             ->map(fn ($label, $category) => new PremiumRule($category, $label, $rule->parameter($category), $rule->id))
             ->values()
             ->all());
+    }
+
+    /**
+     * Attendance buckets -> PH premium categories. Holiday types are the HRMS
+     * holiday types; "company" holidays and special working days carry no
+     * statutory premium here. Combinations the HRMS can't tell apart (a holiday
+     * on a rest day, double holidays) are not derived; enter them as time inputs.
+     */
+    public function attendancePremiumCategory(string $dayType, ?string $holidayType, bool $overtime, bool $night): ?string
+    {
+        $prefix = match (true) {
+            $dayType === 'rest_day' => 'rest_day',
+            $dayType === 'holiday' && $holidayType === 'regular' => 'regular_holiday',
+            $dayType === 'holiday' && $holidayType === 'special_non_working' => 'special_holiday',
+            $dayType === 'holiday' => null,
+            default => '',
+        };
+
+        return match (true) {
+            $prefix === null => null,
+            $prefix === '' && $overtime && $night => 'overtime_night',
+            $prefix === '' && $overtime => 'overtime',
+            $prefix === '' && $night => 'night_differential',
+            $prefix === '' => null, // ordinary hours on a workday are covered by basic pay
+            $overtime => "{$prefix}_overtime",
+            $night => "{$prefix}_night",
+            default => $prefix,
+        };
     }
 
     public function payslipRequirements(): array

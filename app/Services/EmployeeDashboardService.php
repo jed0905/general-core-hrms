@@ -2,10 +2,12 @@
 
 namespace App\Services;
 
+use App\Models\AttendanceEvent;
 use App\Models\Employee;
 use App\Models\LeaveApplication;
 use App\Models\LeaveApplicationDate;
 use App\Models\User;
+use App\Services\Attendance\EmployeeAttendanceService;
 use App\Services\Leave\LeaveApplicationService;
 
 /**
@@ -71,13 +73,14 @@ class EmployeeDashboardService
     }
 
     /**
-     * Today's punches plus a plain status. This is not a DTR computation:
-     * lateness/undertime belong to the future attendance service.
+     * Today's punches and status from the attendance module (attendance_events
+     * and the engine's attendance_days row, when it has been calculated).
      */
     private function attendanceToday(User $user, Employee $employee, ?array $todaySchedule): array
     {
         $todayDate = now()->toDateString();
-        $logs = $this->attendance->getLogsForDate($employee, $todayDate);
+        $events = $this->attendance->events($employee, $todayDate, $todayDate);
+        $day = $this->attendance->day($employee, $todayDate);
 
         $onLeave = $user->can('leave.view_own') && LeaveApplicationDate::query()
             ->where('leave_date', $todayDate)
@@ -87,7 +90,7 @@ class EmployeeDashboardService
             ->exists();
 
         $status = match (true) {
-            $logs->isNotEmpty() => $logs->count() > 1 ? 'timed_in_and_out' : 'timed_in',
+            $events->isNotEmpty() => $events->count() > 1 ? 'timed_in_and_out' : 'timed_in',
             $onLeave => 'on_leave',
             $todaySchedule && $todaySchedule['holiday'] && ! $todaySchedule['holiday']['is_working_day'] => 'holiday',
             $todaySchedule && $todaySchedule['has_schedule'] && ! $todaySchedule['is_working_day'] => 'rest_day',
@@ -96,10 +99,24 @@ class EmployeeDashboardService
 
         return [
             'status' => $status,
-            'first_in' => $logs->first()?->auth_time,
-            'last_out' => $logs->count() > 1 ? $logs->last()->auth_time : null,
-            'has_biometric_id' => $this->attendance->hasBiometricId($employee),
-            'recent' => $this->attendance->getRecentLogs($employee),
+            'day_status' => $day?->status,
+            'late_minutes' => $day?->late_minutes,
+            'first_in' => $events->isNotEmpty() ? $this->localTime($events->first()) : null,
+            'last_out' => $events->count() > 1 ? $this->localTime($events->last()) : null,
+            'has_biometric_id' => $this->attendance->hasActiveEnrollment($employee),
+            'recent' => $this->attendance->recentEvents($employee)->map(fn (AttendanceEvent $event) => [
+                'id' => $event->id,
+                'date' => $event->local_date?->toDateString(),
+                'time' => $this->localTime($event),
+                'type' => $event->event_type,
+                'device' => $event->device?->name,
+            ])->all(),
         ];
+    }
+
+    /** The punch time on the device's own clock, as the employee saw it. */
+    private function localTime(AttendanceEvent $event): string
+    {
+        return $event->occurred_at->copy()->setTimezone($event->device_timezone ?: config('app.timezone'))->format('H:i:s');
     }
 }

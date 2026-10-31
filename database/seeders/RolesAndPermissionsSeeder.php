@@ -127,14 +127,11 @@ class RolesAndPermissionsSeeder extends Seeder
             // Attendance
             'attendance.view',
             'attendance.create',
-            'attendance.update',
-            'attendance.delete',
             'attendance.adjust',
             'attendance.approve_adjustment',
             'attendance.export',
 
             'attendance.process',
-            'attendance.reprocess',
             'attendance.finalize',
 
             // Leave
@@ -322,6 +319,9 @@ class RolesAndPermissionsSeeder extends Seeder
 
             // Payroll (global core + localizations); see *_add_payroll_permissions
             ...self::PAYROLL_PERMISSIONS,
+
+            // Attendance devices, logs, enrollments, configuration; see *_add_attendance_device_permissions
+            ...self::ATTENDANCE_PERMISSIONS,
         ];
 
         /*
@@ -568,13 +568,10 @@ class RolesAndPermissionsSeeder extends Seeder
             // Attendance
             'attendance.view',
             'attendance.create',
-            'attendance.update',
-            'attendance.delete',
             'attendance.adjust',
             'attendance.approve_adjustment',
             'attendance.export',
             'attendance.process',
-            'attendance.reprocess',
             'attendance.finalize',
 
             // Leave: self-service
@@ -840,12 +837,10 @@ class RolesAndPermissionsSeeder extends Seeder
             // Attendance
             'attendance.view',
             'attendance.create',
-            'attendance.update',
             'attendance.adjust',
             'attendance.approve_adjustment',
             'attendance.export',
             'attendance.process',
-            'attendance.reprocess',
 
             // Leave: self-service
             'leave.view_own',
@@ -1042,7 +1037,6 @@ class RolesAndPermissionsSeeder extends Seeder
             // Attendance
             'attendance.view',
             'attendance.create',
-            'attendance.update',
             'attendance.adjust',
             'attendance.export',
 
@@ -1294,6 +1288,9 @@ class RolesAndPermissionsSeeder extends Seeder
         foreach (self::PAYROLL_GRANTS as $roleVariable => $permissions) {
             $this->seedDefaultPermissions($rolesByName[$roleVariable], $permissions);
         }
+        foreach (self::ATTENDANCE_GRANTS as $roleVariable => $permissions) {
+            $this->seedDefaultPermissions($rolesByName[$roleVariable], $permissions);
+        }
 
         /*
         |--------------------------------------------------------------------------
@@ -1316,6 +1313,21 @@ class RolesAndPermissionsSeeder extends Seeder
         'payroll.scope.all',
         'payslip.view', 'payslip.view_own',
         'report.payroll',
+    ];
+
+    /** Attendance module permissions; keep in sync with the *_add_attendance_device_permissions migration. */
+    private const ATTENDANCE_PERMISSIONS = [
+        'attendance.scope.all', 'attendance.config.manage', 'attendance.roster.manage',
+        'attendance.device.view', 'attendance.device.manage', 'attendance.device.configure', 'attendance.device.sync',
+        'attendance.log.view', 'attendance.log.import', 'attendance.enrollment.view', 'attendance.enrollment.manage',
+    ];
+
+    /** Default attendance grants per role variable (superadmin holds everything). */
+    private const ATTENDANCE_GRANTS = [
+        'hrDirector' => ['attendance.scope.all', 'attendance.config.manage', 'attendance.roster.manage', 'attendance.device.view', 'attendance.log.view', 'attendance.enrollment.view'],
+        'hrManager' => ['attendance.scope.all', 'attendance.roster.manage', 'attendance.device.view', 'attendance.device.manage', 'attendance.device.configure', 'attendance.device.sync', 'attendance.log.view', 'attendance.log.import', 'attendance.enrollment.view', 'attendance.enrollment.manage'],
+        'hrStaff' => ['attendance.scope.all', 'attendance.roster.manage', 'attendance.device.view', 'attendance.device.sync', 'attendance.log.view', 'attendance.log.import', 'attendance.enrollment.view', 'attendance.enrollment.manage'],
+        'payroll' => ['attendance.scope.all'],
     ];
 
     /** Default payroll grants per role variable. Separation of duties: payroll prepares, the HR director approves. */

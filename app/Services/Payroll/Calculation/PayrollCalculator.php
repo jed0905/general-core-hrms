@@ -16,6 +16,7 @@ use App\Models\PayrollTimeInput;
 use App\Services\Payroll\Contracts\LeaveInputProvider;
 use App\Services\Payroll\Contracts\PayrollLocalization;
 use App\Services\Payroll\Contracts\TimeInputProvider;
+use App\Services\Payroll\Contracts\ValidatesTimeInputs;
 use App\Services\Payroll\Inputs\WorkingDayCounter;
 use App\Services\Payroll\Localization\LocalizationRegistry;
 use App\Services\Payroll\Rules\MissingStatutoryRuleException;
@@ -80,6 +81,12 @@ class PayrollCalculator
                 ? $this->leaveInputs->summary($employee, $this->coverageStart($assignment, $period), $this->coverageEnd($assignment, $period), (string) $payGroup->hours_per_day)
                 : ['paid_days' => '0', 'unpaid_days' => '0', 'dates' => []],
         );
+
+        if ($this->timeInputs instanceof ValidatesTimeInputs && $run->run_type === PayrollRun::TYPE_REGULAR) {
+            foreach ($this->timeInputs->problems($employee, $period) as $problem) {
+                $context->error('TIME_INPUTS_NOT_READY', $problem);
+            }
+        }
 
         $localization = $this->localizations->for($context->countryCode());
         if (! $localization) {

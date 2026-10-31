@@ -5,6 +5,7 @@ namespace App\Providers;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Foundation\Support\Providers\RouteServiceProvider as ServiceProvider;
 use Illuminate\Http\Request;
+use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Route;
 
@@ -74,6 +75,17 @@ class RouteServiceProvider extends ServiceProvider
             // Talent & Recruitment
             Route::middleware(['auth', 'web'])
                 ->group(base_path('routes/Recruitment/web.php'));
+
+            // Attendance (devices, logs, daily attendance, adjustments)
+            Route::middleware(['auth', 'web'])
+                ->group(base_path('routes/Attendance/web.php'));
+
+            // Device- and connector-initiated requests: stateless (no session/CSRF),
+            // authenticated per device/connector, no URL prefix (ZKTeco PUSH needs /iclock/*).
+            // Not the "api" group: its per-IP limit would throttle several devices behind one NAT;
+            // each device route sets its own throttle.
+            Route::middleware(SubstituteBindings::class)
+                ->group(base_path('routes/Attendance/device.php'));
         });
     }
 }

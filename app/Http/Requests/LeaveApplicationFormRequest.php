@@ -502,10 +502,6 @@ class LeaveApplicationFormRequest extends FormRequest
                     // CASE 2: POST-RETURN FILING
                     // =====================================
 
-                    $biometricIds = \App\Models\EmployeeBiometricId::where('employee_id', $employeeId)
-                        ->pluck('biometric_id');
-
-
                     $returnDate = $to->copy()->addDay();
 
                     $firstReportingDay = null;
@@ -524,11 +520,9 @@ class LeaveApplicationFormRequest extends FormRequest
                             continue;
                         }
 
-                        $hasAttendance = \App\Models\EmployeeAttendanceLog::whereIn(
-                            'employee_id',   // contains biometric IDs
-                            $biometricIds
-                        )
-                            ->where('auth_date', $returnDate->toDateString())
+                        $hasAttendance = \App\Models\AttendanceEvent::where('employee_id', $employeeId)
+                            ->where('status', \App\Models\AttendanceEvent::STATUS_ACCEPTED)
+                            ->whereDate('local_date', $returnDate->toDateString())
                             ->exists();
 
                         if ($hasAttendance) {

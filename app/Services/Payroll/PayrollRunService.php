@@ -2,6 +2,7 @@
 
 namespace App\Services\Payroll;
 
+use App\Events\PayrollRunFinalized;
 use App\Models\EmploymentAssignment;
 use App\Models\PayrollAdjustment;
 use App\Models\PayrollPeriod;
@@ -343,6 +344,7 @@ class PayrollRunService
 
             $run->forceFill(['status' => PayrollRun::STATUS_FINALIZED, 'finalized_at' => now(), 'finalized_by' => $user->id])->save();
             $this->event($run, 'finalized', PayrollRun::STATUS_APPROVED, PayrollRun::STATUS_FINALIZED, $user, $remarks);
+            PayrollRunFinalized::dispatch($run);
 
             return $run->fresh();
         });

@@ -26,55 +26,6 @@
       </v-col>
 
       <v-col cols="12" md="4">
-        <v-field
-          variant="outlined"
-          density="compact"
-          :disabled="!isUserAllowedToEdit"
-          rounded="lg"
-        >
-          <template v-slot:default>
-            <div
-              class="v-field__input"
-              style="min-height: 40px; padding: 8px 12px"
-            >
-              <div
-                v-if="newBiometrics.length > 0"
-                class="d-flex flex-wrap align-center gap-1"
-                style="width: 100%"
-              >
-                <v-chip
-                  v-for="biometrics in newBiometrics"
-                  :key="biometrics.id"
-                  closable
-                  @click:close="removeBiometrics(biometrics.id)"
-                  :disabled="!isUserAllowedToEdit"
-                  color="grey-lighten-2"
-                  variant="flat"
-                  size="small"
-                  class="ma-0"
-                >
-                  {{ biometrics.biometrics_id }}
-                </v-chip>
-              </div>
-              <div v-else class="text-grey text-body-2">
-                No biometrics ID added
-              </div>
-            </div>
-          </template>
-        </v-field>
-      </v-col>
-      <v-col cols="12" md="1" class="d-flex align-center">
-        <v-btn
-          v-if="isUserAllowedToEdit"
-          color="starbucks-green"
-          icon="mdi-plus"
-          size="x-small"
-          @click="biometricsDialog = true"
-          class="mb-6"
-        >
-        </v-btn>
-      </v-col>
-      <v-col cols="12" md="4">
         <v-autocomplete
           label="Detailed At"
           variant="outlined"
@@ -503,37 +454,6 @@
     </v-row>
   </v-form>
 
-    <v-dialog v-model="biometricsDialog" max-width="400" persistent>
-    <v-card class="pa-2 ma-2 rounded-lg">
-      <v-card-title>
-        <span class="text-h6">Add Another Biometrics ID</span>
-      </v-card-title>
-      <v-card-text>
-        <v-text-field
-          v-model="newBiometricsId"
-          label="Biometrics ID"
-          variant="outlined"
-          density="comfortable"
-          type="number"
-          rounded="lg"
-          autofocus
-        ></v-text-field>
-      </v-card-text>
-      <v-card-actions class="justify-end">
-        <ButtonMuted
-          color="black"
-          @click="closeBiometricsDialog"
-          name="Cancel"
-        />
-        <ButtonSuccess
-          @click="addBiometricsIdFromDialog"
-          name="Add"
-          :disabled="!newBiometricsId || String(newBiometricsId).trim() === ''"
-        />
-      </v-card-actions>
-    </v-card>
-  </v-dialog>
-
   <v-dialog
     v-model="isSeparateTransferDialogVisible"
     max-width="500"
@@ -772,18 +692,11 @@ export default {
       this.employeeJobDetails.data.date_separated === null
         ? "Employed"
         : "Terminated";
-
-    // Initialize biometrics from props
-    this.syncBiometricsFromProps();
   },
 
   data() {
     return {
       activeMenu: "Job",
-      biometricsDialog: false,
-      newBiometricsId: "",
-      newBiometrics: [],
-      originalBiometrics: [], // Store original biometrics IDs for comparison
       employeeName: this.employeeName,
       currentEmployementStatus: "Employed",
       isSeparateTransferDialogVisible: false,
@@ -822,9 +735,6 @@ export default {
 
       jobDetailForm: useForm({
         date_hired: this.employeeJobDetails.data?.date_hired || null,
-        biometrics_id: this.employeeJobDetails.data?.biometrics_id || null,
-        biometrics_to_add: [],
-        biometrics_to_delete: [],
         detailed_at: this.employeeJobDetails.data?.detailed_at || null,
         operating_unit_id:
           this.employeeJobDetails.data?.operating_unit_id || null,
@@ -1088,9 +998,6 @@ export default {
             assumption_date: d.assumption_date,
             end_date: d.end_date,
           })) || [];
-
-        // Sync biometrics when employeeJobDetails is updated
-        this.syncBiometricsFromProps();
       },
       deep: true,
       immediate: true,
@@ -1343,36 +1250,6 @@ export default {
         this.jobDetailForm.higher_supervisor_designation = null;
       }
 
-      // Calculate biometrics changes
-      const currentBiometricIds = this.newBiometrics.map((bio) =>
-        String(bio.biometrics_id)
-      );
-      const originalBiometricIds = this.originalBiometrics.map((bio) =>
-        String(bio.biometrics_id)
-      );
-
-      // Find IDs to add (in current but not in original)
-      const toAdd = this.newBiometrics
-        .filter((bio) => {
-          const isTemporary = bio.id > 1e12;
-          const notInOriginal = !originalBiometricIds.includes(
-            String(bio.biometrics_id)
-          );
-          return isTemporary || notInOriginal;
-        })
-        .map((bio) => bio.biometrics_id);
-
-      // Find IDs to delete (in original but not in current)
-      const toDelete = this.originalBiometrics
-        .filter(
-          (bio) => !currentBiometricIds.includes(String(bio.biometrics_id))
-        )
-        .map((bio) => bio.id);
-
-      // Add biometrics changes to form data
-      this.jobDetailForm.biometrics_to_add = toAdd;
-      this.jobDetailForm.biometrics_to_delete = toDelete;
-
       this.jobDetailForm.put(
         route("hrmanagement.employee.updateJobDetails", {
           id: this.employeeJobDetails.data.id,
@@ -1381,7 +1258,6 @@ export default {
           onSuccess: () => {
             this.showToast("Job Details updated successfully.", "success");
             this.$emit("jobDetailRefresh");
-            // Note: Biometrics will be synced from props via the watch when data refreshes
           },
 
           onError: (errors) => {
@@ -1393,87 +1269,9 @@ export default {
       );
     },
 
-    addBiometricsId(closeDialog = false) {
-      // Convert to string and trim
-      const biometricsIdValue = String(this.newBiometricsId || "").trim();
-
-      if (!biometricsIdValue) {
-        return;
-      }
-
-      // Check if the ID already exists
-      const exists = this.newBiometrics.some(
-        (bio) => String(bio.biometrics_id) === biometricsIdValue
-      );
-
-      if (exists) {
-        this.showToast("Biometrics ID already exists", "error");
-        return;
-      }
-
-      // Add to local array only (will be saved when Save button is clicked)
-      const tempId = Date.now(); // Temporary ID for new items
-      this.newBiometrics.push({
-        id: tempId,
-        biometrics_id: biometricsIdValue,
-      });
-
-      // Close dialog
-      if (closeDialog) {
-        this.biometricsDialog = false;
-        this.newBiometricsId = "";
-      }
-    },
-
-    addBiometricsIdFromDialog() {
-      this.addBiometricsId(true);
-    },
-
-    closeBiometricsDialog() {
-      this.biometricsDialog = false;
-      this.newBiometricsId = "";
-    },
-
-    removeBiometrics(biometricsId) {
-      if (!biometricsId) {
-        return;
-      }
-
-      // Find the biometrics item by id
-      const index = this.newBiometrics.findIndex(
-        (bio) => bio.id === biometricsId
-      );
-
-      if (index !== -1) {
-        // Remove from local array only (will be saved when Save button is clicked)
-        this.newBiometrics.splice(index, 1);
-      } else {
-        this.showToast("Biometrics ID not found", "error");
-      }
-    },
-
     handleEmployementStatus() {
       this.isSeparateTransferDialogVisible = true;
       // this.currentEmployementStatus = this.currentEmployementStatus === 'Employed' ? 'Terminated' : 'Employed'
-    },
-
-    syncBiometricsFromProps() {
-      // Check if biometric_ids are loaded from the relationship
-      if (
-        this.employeeJobDetails.data?.biometric_ids &&
-        Array.isArray(this.employeeJobDetails.data.biometric_ids)
-      ) {
-        this.originalBiometrics =
-          this.employeeJobDetails.data.biometric_ids.map((bio) => ({
-            id: bio.id,
-            biometrics_id: bio.biometric_id || bio.biometrics_id,
-          }));
-        this.newBiometrics = this.originalBiometrics.map((bio) => ({ ...bio }));
-      } else {
-        // If no biometric_ids loaded, initialize with empty array
-        this.originalBiometrics = [];
-        this.newBiometrics = [];
-      }
     },
   },
 };

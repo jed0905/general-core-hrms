@@ -80,12 +80,15 @@
                   <v-chip :color="statusColor" variant="tonal" size="small" class="mt-1">
                     {{ statusLabel }}
                   </v-chip>
+                  <v-chip v-if="attendance.day_status" :color="dayStatus.color" variant="tonal" size="small" class="mt-1 ml-1">
+                    {{ dayStatus.label }}
+                  </v-chip>
                   <div v-if="attendance.first_in" class="text-body-2 mt-2">
                     In {{ attendance.first_in }}
                     <span v-if="attendance.last_out"> · Out {{ attendance.last_out }}</span>
                   </div>
                   <div v-if="!attendance.has_biometric_id" class="text-caption text-medium-emphasis mt-2">
-                    No attendance device ID is registered for you yet.
+                    No attendance device ID is mapped to you yet.
                   </div>
                 </template>
               </v-card-text>
@@ -202,7 +205,7 @@
                   <tr>
                     <th>Date</th>
                     <th>Time</th>
-                    <th>Direction</th>
+                    <th>Type</th>
                     <th>Device</th>
                   </tr>
                 </thead>
@@ -211,15 +214,15 @@
                     <td colspan="4" class="text-center py-4 text-medium-emphasis">No records yet.</td>
                   </tr>
                   <tr v-for="log in attendance.recent" :key="log.id">
-                    <td>{{ formatDate(log.auth_date) }}</td>
-                    <td>{{ log.auth_time }}</td>
-                    <td>{{ log.direction }}</td>
-                    <td>{{ log.device_name }}</td>
+                    <td>{{ formatDate(log.date) }}</td>
+                    <td>{{ log.time }}</td>
+                    <td>{{ typeLabel(log.type) }}</td>
+                    <td>{{ log.device || "—" }}</td>
                   </tr>
                 </tbody>
               </v-table>
               <v-card-actions>
-                <v-btn variant="text" color="primary" size="small" @click="go('time.my-attendance.index')">
+                <v-btn variant="text" color="primary" size="small" @click="go('attendance.my.index')">
                   My Attendance
                 </v-btn>
               </v-card-actions>
@@ -235,6 +238,7 @@
 import { Head, router } from "@inertiajs/vue3";
 import SidebarLayout from "@/layouts/SidebarLayout.vue";
 import permissions from "@/mixins/permissions";
+import { DAY_STATUS } from "@/utils/attendance";
 
 const ATTENDANCE_STATUS = {
   timed_in: { label: "Timed in", color: "success" },
@@ -295,6 +299,9 @@ export default {
     statusLabel() {
       return ATTENDANCE_STATUS[this.attendance?.status]?.label ?? this.attendance?.status;
     },
+    dayStatus() {
+      return DAY_STATUS[this.attendance?.day_status] ?? { label: this.attendance?.day_status, color: "default" };
+    },
     statusColor() {
       return ATTENDANCE_STATUS[this.attendance?.status]?.color ?? "default";
     },
@@ -305,6 +312,9 @@ export default {
     },
     time(value) {
       return value ? String(value).substring(0, 5) : "";
+    },
+    typeLabel(type) {
+      return type ? type.replace(/_/g, " ").replace(/^./, (c) => c.toUpperCase()) : "";
     },
     formatDate(value, options = undefined) {
       return value ? new Date(`${String(value).substring(0, 10)}T00:00:00`).toLocaleDateString(undefined, options) : "";

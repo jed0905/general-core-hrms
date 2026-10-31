@@ -21,7 +21,6 @@ use App\Http\Controllers\Web\Maintenance\OperatingUnitController;
 use App\Http\Controllers\Web\SelfService\MyEntitlementController;
 use App\Http\Controllers\Web\SelfService\MyLeaveReportsController;
 use App\Http\Controllers\Web\Maintenance\MaintenanceRoleController;
-use App\Http\Controllers\Web\SelfService\DailyTimeRecordController;
 use App\Http\Controllers\Web\User\Dashboard\UserDashboardController;
 use App\Http\Controllers\Web\Administration\UserManagementController;
 use App\Http\Controllers\Web\Maintenance\MaintenanceLeavesController;

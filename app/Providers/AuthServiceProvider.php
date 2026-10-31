@@ -10,6 +10,7 @@ use App\Models\ApplicationAssessment;
 use App\Models\ApplicationEvaluation;
 use App\Models\ApplicationInterview;
 use App\Models\ApplicationSelection;
+use App\Models\AttendanceAdjustment;
 use App\Models\Employee;
 use App\Models\EmployeeCompensation;
 use App\Models\EmployeeDocument;
@@ -29,6 +30,7 @@ use App\Policies\ApplicantDocumentPolicy;
 use App\Policies\ApplicantPolicy;
 use App\Policies\ApplicationPolicy;
 use App\Policies\AssessmentPolicy;
+use App\Policies\Attendance\AttendanceAdjustmentPolicy;
 use App\Policies\EmployeeDocumentPolicy;
 use App\Policies\EmployeeMovementPolicy;
 use App\Policies\EmployeePolicy;
@@ -80,6 +82,7 @@ class AuthServiceProvider extends ServiceProvider
         PayrollRunEmployee::class => PayslipPolicy::class,
         StatutoryRuleVersion::class => StatutoryRuleVersionPolicy::class,
         EmployeeCompensation::class => EmployeeCompensationPolicy::class,
+        AttendanceAdjustment::class => AttendanceAdjustmentPolicy::class,
     ];
 
     /**
@@ -93,6 +96,9 @@ class AuthServiceProvider extends ServiceProvider
         // Recruitment dashboard: anyone who can reach requisitions or vacancies (by permission or assignment).
         // Payroll pages reachable with either of two permissions (never by role).
         Gate::define('viewPayrollEmployees', fn (User $user) => $user->can('payroll.config.view') || $user->can('compensation.view'));
+        Gate::define('accessAttendanceAdjustments', fn (User $user) => $user->can('attendance.adjust') || $user->can('attendance.approve_adjustment'));
+        Gate::define('accessAttendanceSettings', fn (User $user) => $user->can('attendance.config.manage') || $user->can('attendance.device.configure'));
+        Gate::define('accessAttendanceSummaries', fn (User $user) => $user->can('attendance.process') || $user->can('attendance.finalize'));
         Gate::define('accessPayrollInputs', fn (User $user) => $user->can('payroll.input.manage') || $user->can('payroll.input.approve'));
         Gate::define('accessRecruitment', fn (User $user) => app(RecruitmentAccess::class)->for($user)['dashboard']);
         // The method usePersonalAccessTokens() is not defined on the Sanctum facade.

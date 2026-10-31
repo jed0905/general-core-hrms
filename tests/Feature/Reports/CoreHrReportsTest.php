@@ -332,7 +332,7 @@ class CoreHrReportsTest extends ReportsTestCase
     }
 
     #[Test]
-    public function attendance_reports_are_raw_and_flag_unregistered_ids(): void
+    public function the_attendance_log_reads_the_attendance_module_and_flags_unmapped_device_users(): void
     {
         $hr = $this->reportUser('hr_staff');
         $this->punch($this->ana, 'BIO-1', '2026-10-06', '08:01:00');
@@ -341,20 +341,27 @@ class CoreHrReportsTest extends ReportsTestCase
         $this->punch($this->ben, 'BIO-2', '2026-09-01', '08:00:00'); // outside default range
 
         $log = collect($this->rowsOf($hr, 'attendance-log'));
-        $this->assertSame(['Reyes, Ana', 'Reyes, Ana', 'Unregistered ID'], $log->pluck('employee')->all());
-        $this->assertSame('SN-001', $log[0]['device_serial']);
-        $this->assertSame(['Unregistered ID'], collect($this->rowsOf($hr, 'attendance-log', ['unregistered_only' => 1]))->pluck('employee')->all());
+        $this->assertSame(['Reyes, Ana', 'Reyes, Ana', 'Unmapped device user'], $log->pluck('employee')->all());
+        $this->assertSame(['17:05:00', 'check out', 'Lobby', 'accepted'], [$log[0]['time'], $log[0]['type'], $log[0]['device'], $log[0]['status']]);
+        $this->assertArrayNotHasKey('card_no', $log[0]);
+        $this->assertSame(['Unmapped device user'], collect($this->rowsOf($hr, 'attendance-log', ['event_status' => 'unmatched']))->pluck('employee')->all());
 
-        $summary = collect($this->rowsOf($hr, 'attendance-summary'))->keyBy('biometric_id');
-        $this->assertSame([2, '08:01:00', '17:05:00'], [$summary['BIO-1']['punches'], $summary['BIO-1']['first_punch'], $summary['BIO-1']['last_punch']]);
-        $this->assertArrayNotHasKey('late', $summary['BIO-1']);
-
-        $this->actingAs($hr)->get($this->showUrl('attendance-summary'))
-            ->assertInertia(fn (AssertableInertia $page) => $page
-                ->where('report.title', 'Raw Attendance Summary')
-                ->where('notes.0', fn ($note) => str_contains($note, 'not calculated')));
+        // The raw-punch summary was replaced by the calculated Daily Attendance report.
+        $this->actingAs($hr)->get('/reports/attendance-summary')->assertNotFound();
 
         $this->actingAs($hr)->get($this->showUrl('attendance-log', ['date_from' => '2026-01-01', 'date_to' => '2026-10-07']))->assertSessionHasErrors('date_to');
+    }
+
+    #[Test]
+    public function supervisors_see_only_their_teams_attendance_log_rows(): void
+    {
+        $supervisor = $this->userWithRole('supervisor');
+        $this->ana->update(['supervisor_id' => $supervisor->employee_id]);
+        $this->punch($this->ana, 'BIO-1', '2026-10-06', '08:01:00');
+        $this->punch($this->ben, 'BIO-2', '2026-10-06', '08:00:00');
+        $this->punch(null, 'BIO-X', '2026-10-06', '07:00:00');
+
+        $this->assertSame(['Reyes, Ana'], collect($this->rowsOf($supervisor, 'attendance-log'))->pluck('employee')->all());
     }
 
     #[Test]

@@ -22,7 +22,6 @@ class EmployeeJobDetailsResource extends JsonResource
 
             // Job Details
             'date_hired' => $this->date_hired,
-            'biometrics_id' => $this->biometrics_id,
             'detailed_at' => $this->detailed_at,
             'operating_unit_id' => $this->operating_unit_id,
             'department_id' => $this->department_id,
@@ -35,14 +34,6 @@ class EmployeeJobDetailsResource extends JsonResource
             'custom_hourly_rate' => $this->custom_hourly_rate,
             'custom_daily_rate' => $this->custom_daily_rate,
             'designations' => $this->employeeDesignations,
-            'biometric_ids' => $this->whenLoaded('biometricIds', function () {
-                return $this->biometricIds->map(function ($bio) {
-                    return [
-                        'id' => $bio->id,
-                        'biometric_id' => $bio->biometric_id,
-                    ];
-                });
-            }),
             'immediate_supervisor_id' => $this->immediate_supervisor_id,
             'immediate_supervisor_designation' => $this->immediate_supervisor_designation,
             'higher_supervisor_id' => $this->higher_supervisor_id,

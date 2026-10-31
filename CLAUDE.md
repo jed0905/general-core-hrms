@@ -126,8 +126,7 @@ government/university HRIS, and a lot of that legacy code is still in the repo
   - `Employee::supervisor()` is defined as `hasOne(..., 'supervisor_id')`. That returns a
     subordinate; the correct relation is `belongsTo(Employee::class, 'supervisor_id')`.
   - `Employee::user()` is `hasMany`.
-  - `EmployeeAttendanceLog::employee()` and `EmployeeMovement` reference columns and models
-    that don't exist.
+  - `EmployeeMovement` references columns and models that don't exist.
   - `LeaveApprovalWorkflowStep` `$fillable` doesn't match its migration.
   - `LeaveApplicationComment` fills `comment`, but the column is misspelled `commment`.
   - `LeaveStatus` has no table. The status history table is `leave_application_status_histories`.
@@ -262,10 +261,9 @@ Leave, …):
 
 - `app/Http/Controllers/Web/HrManagement/*`, `Web/Maintenance/*`, `EmployeeMovementController`
 - `app/Services/LeaveService.php`, `LeavePdfService`, `RestoreLeaveCreditService`,
-  `SpecialLeaveService`, `EmployeeLeaveService`, `DailyTimeRecordService`, `PrintDtrService`,
-  `UniversityActivityService`, `SalaryService`
+  `SpecialLeaveService`, `EmployeeLeaveService`, `UniversityActivityService`, `SalaryService`
 - `app/Console/Commands/*Leave*`, `ProcessExistingSignatures`, `app/Jobs/*`.
-  The scheduled `leaves:credit` command and `CheckTardinessJob` are both broken.
+  The scheduled `leaves:credit` command is broken.
 - `app/Helpers/*` (`UserInformationHelper`, `SupervisorHelper`, …), most of `app/Observers`,
   and most of `app/Http/Resources` and `app/Http/Filters`
 - `resources/js/pages/app/HrManagement/**`, `pages/app/RolesAndPermissions/**`, and
@@ -277,10 +275,14 @@ If a task needs something from them, reimplement it in the new module structure.
 
 ## Attendance / DTR
 
-There are no live routes. Only raw `employee_attendance_logs` (biometric punches keyed by
-a biometric ID string) and `employee_biometric_ids` exist. The live Time module
-(`routes/Time/web.php`) covers shifts, work schedules, effective-dated employee schedule
-assignments, and holidays.
+The attendance module (`routes/Attendance/{web,device}.php`, `app/Services/Attendance/`,
+`resources/js/pages/app/Attendance/**`) is the only attendance system: devices and connectors,
+`biometric_enrollments` (per-device user mappings), raw `attendance_events` through
+`EventIngestionService`, the engine (`AttendanceRecalculator` → `attendance_days`), adjustments,
+period summaries for payroll. The legacy `employee_attendance_logs` / `employee_biometric_ids`
+tables, Time Logs page and old DTR code were removed (2026-10-31); don't reintroduce them. Docs:
+`docs/development/attendance/`. The Time module (`routes/Time/web.php`) covers shifts, work
+schedules, effective-dated employee schedule assignments, and holidays.
 
 ## Organization model
 

@@ -426,9 +426,9 @@ export default {
             {
               title: "My Attendance",
               icon: "mdi-clock-outline",
-              route: "time.my-attendance.index",
+              route: "attendance.my.index",
               permission: "attendance.view_own",
-              routePrefix: "time.my-attendance",
+              routePrefix: "attendance.my",
             },
             {
               title: "My Employment History",
@@ -541,13 +541,6 @@ export default {
         time: {
           title: "Time",
           items: [
-            // {
-            //   title: "Attendance",
-            //   icon: "mdi-clock-outline",
-            //   route: "hrmanagement.time.index",
-            //   permission: "attendance.view",
-            //   routePrefix: "hrmanagement.dailytimerecord",
-            // },
             {
               title: "Work Shifts",
               icon: "mdi-timetable",
@@ -568,13 +561,6 @@ export default {
               route: "time.employee-schedules.index",
               permission: "work_schedule.view",
               routePrefix: "time.schedules",
-            },
-            {
-              title: "Time Logs",
-              icon: "mdi-fingerprint",
-              route: "time.time-logs.index",
-              permission: "attendance.view",
-              routePrefix: "time.time-logs",
             },
             {
               title: "Holidays",
@@ -631,6 +617,21 @@ export default {
               permission: "leave_approval_workflow.view",
               routePrefix: "leave.config.workflows",
             },
+          ],
+        },
+
+        attendance: {
+          title: "Attendance",
+          items: [
+            { title: "Dashboard", icon: "mdi-clipboard-clock-outline", route: "attendance.dashboard", permission: "attendance.view", routePrefix: "attendance.dashboard" },
+            { title: "Daily Attendance", icon: "mdi-calendar-check-outline", route: "attendance.daily.index", permission: "attendance.view", routePrefix: "attendance.daily" },
+            { title: "Adjustments", icon: "mdi-file-document-edit-outline", route: "attendance.adjustments.index", permission: ["attendance.adjust", "attendance.approve_adjustment"], routePrefix: "attendance.adjustments" },
+            { title: "Shift Roster", icon: "mdi-calendar-account-outline", route: "attendance.roster.index", permission: "attendance.roster.manage", routePrefix: "attendance.roster" },
+            { title: "Raw Logs", icon: "mdi-format-list-bulleted", route: "attendance.logs.index", permission: "attendance.log.view", routePrefix: "attendance.logs" },
+            { title: "Devices", icon: "mdi-fingerprint", route: "attendance.devices.index", permission: "attendance.device.view", routePrefix: "attendance.devices" },
+            { title: "Enrollments", icon: "mdi-account-key-outline", route: "attendance.enrollments.index", permission: "attendance.enrollment.view", routePrefix: "attendance.enrollments" },
+            { title: "For Payroll", icon: "mdi-cash-clock", route: "attendance.summaries.index", permission: ["attendance.process", "attendance.finalize"], routePrefix: "attendance.summaries" },
+            { title: "Settings", icon: "mdi-cog-outline", route: "attendance.settings.index", permission: ["attendance.config.manage", "attendance.device.configure"], routePrefix: "attendance.settings" },
           ],
         },
 
@@ -804,11 +805,18 @@ export default {
               routePrefix: "reports.attendance-log.",
             },
             {
-              title: "Attendance Summary",
+              title: "Daily Attendance",
               icon: "mdi-clock-check-outline",
-              route: "reports.attendance-summary.show",
+              route: "reports.attendance-daily.show",
               permission: "report.attendance",
-              routePrefix: "reports.attendance-summary.",
+              routePrefix: "reports.attendance-daily.",
+            },
+            {
+              title: "Attendance Totals",
+              icon: "mdi-sigma",
+              route: "reports.attendance-totals.show",
+              permission: "report.attendance",
+              routePrefix: "reports.attendance-totals.",
             },
             { header: "Leave" },
             {
@@ -996,6 +1004,7 @@ export default {
         this.modules.time,
         this.modules.leave,
         this.modules.recruitment,
+        this.modules.attendance,
         this.modules.payroll,
         this.modules.reports,
         this.modules.administration,

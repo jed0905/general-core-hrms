@@ -34,9 +34,12 @@ class PayGroup extends Model
 
     public const ROUNDING_MODES = ['half_up', 'half_even', 'up', 'down'];
 
+    /** Where payroll reads time quantities: approved manual inputs (default) or approved attendance summaries. */
+    public const TIME_SOURCES = ['manual_inputs', 'attendance'];
+
     protected $fillable = [
         'legal_entity_id', 'code', 'name', 'payroll_country_code', 'pay_frequency', 'pay_currency',
-        'hours_per_day', 'annual_working_days', 'proration_method', 'rounding_mode', 'is_active',
+        'hours_per_day', 'annual_working_days', 'proration_method', 'rounding_mode', 'time_source', 'is_active',
     ];
 
     protected function casts(): array

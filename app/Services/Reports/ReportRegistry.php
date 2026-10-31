@@ -4,7 +4,9 @@ namespace App\Services\Reports;
 
 use App\Models\User;
 use App\Services\Reports\Attendance\AttendanceLogReport;
-use App\Services\Reports\Attendance\AttendanceSummaryReport;
+use App\Services\Reports\Attendance\AttendanceTotalsReport;
+use App\Services\Reports\Attendance\DailyAttendanceReport;
+use App\Services\Reports\Attendance\DeviceSyncReport;
 use App\Services\Reports\Employee\DepartmentReport;
 use App\Services\Reports\Employee\EmployeeDemographicsReport;
 use App\Services\Reports\Employee\EmployeeMasterlistReport;
@@ -74,7 +76,9 @@ class ReportRegistry
         ScheduleAssignmentsReport::class,
         DailyRosterReport::class,
         AttendanceLogReport::class,
-        AttendanceSummaryReport::class,
+        DailyAttendanceReport::class,
+        AttendanceTotalsReport::class,
+        DeviceSyncReport::class,
         LeaveApplicationsReport::class,
         LeaveUsageReport::class,
         LeaveBalanceReport::class,
@@ -128,7 +132,7 @@ class ReportRegistry
             }
 
             $reports = collect(self::REPORTS)
-                ->filter(fn ($class) => $class::category() === $category)
+                ->filter(fn ($class) => $class::category() === $category && $user->can($class::permission()))
                 ->map(function ($class) {
                     $report = app($class);
 

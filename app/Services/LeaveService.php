@@ -12,7 +12,6 @@ use App\Http\Resources\LeaveApplicationResource;
 use App\Models\Department;
 use App\Models\Designation;
 use App\Models\Employee;
-use App\Models\EmployeeAttendanceLogEvents;
 use App\Models\EmployeeLeaveCreditsHistory;
 use App\Models\EmployeeSubordinate;
 use App\Models\Leave;

@@ -3,10 +3,10 @@
 namespace Database\Seeders\Demo;
 
 use App\Models\Applicant;
+use App\Models\AttendanceDevice;
+use App\Models\BiometricEnrollment;
 use App\Models\CorporateBranding;
 use App\Models\Employee;
-use App\Models\EmployeeAttendanceLog;
-use App\Models\EmployeeBiometricId;
 use App\Models\EmployeeMovementType;
 use App\Models\LeaveApplication;
 use App\Models\LeaveApplicationDate;
@@ -15,6 +15,10 @@ use App\Models\LeaveType;
 use App\Models\Location;
 use App\Models\Shift;
 use App\Models\User;
+use App\Services\Attendance\Devices\Support\EventTime;
+use App\Services\Attendance\Devices\Support\NormalizedEvent;
+use App\Services\Attendance\Engine\AttendanceRecalculator;
+use App\Services\Attendance\Ingestion\EventIngestionService;
 use App\Services\DepartmentService;
 use App\Services\EmployeeMovementService;
 use App\Services\EmployeeService;
@@ -780,7 +784,9 @@ class AcmeDemoSeeder extends Seeder
     }
 
     // ------------------------------------------------------------------
-    // Raw attendance punches (device logs) for four weeks
+    // Attendance for four weeks: SIMULATED devices (inactive, so the
+    // scheduler never polls them), device user mappings and punches through
+    // the attendance ingestion pipeline, then the engine's daily results.
     // ------------------------------------------------------------------
 
     private function attendance(): void
@@ -800,19 +806,32 @@ class AcmeDemoSeeder extends Seeder
             ->map(fn ($d) => $d->application->employee_id.'|'.$d->leave_date->toDateString())
             ->flip();
 
-        $devices = [
-            'main' => ['Main Lobby Terminal', 'ZK-MAIN-0101'],
-            'north' => ['North Branch Terminal', 'ZK-NB-0201'],
-            'south' => ['South Branch Terminal', 'ZK-SB-0301'],
-            'ops' => ['Operations Center Gate', 'ZK-OPS-0401'],
-            'remote' => ['Mobile Clock-in', 'MOBILE-APP'],
-        ];
+        $timezone = config('app.timezone');
+        $devices = collect([
+            'main' => ['Main Lobby Terminal', 'SIM-MAIN-0101'],
+            'north' => ['North Branch Terminal', 'SIM-NB-0201'],
+            'south' => ['South Branch Terminal', 'SIM-SB-0301'],
+            'ops' => ['Operations Center Gate', 'SIM-OPS-0401'],
+            'remote' => ['Mobile Clock-in', 'SIM-MOBILE'],
+        ])->map(fn ($device, $key) => AttendanceDevice::create([
+            'name' => $device[0].' (demo)',
+            'vendor' => 'simulator',
+            'model' => 'Demo simulator',
+            'serial_number' => $device[1],
+            'location_id' => isset($this->locations[$key]) ? $this->locations[$key]->id : null,
+            'timezone' => $timezone,
+            'connection_method' => 'simulator',
+            'is_active' => false,
+        ]));
         $locationKeys = collect($this->locations)->mapWithKeys(fn ($l, $k) => [$l->id => $k]);
+        $ingestion = app(EventIngestionService::class);
+        $types = ['check in' => 'check_in', 'check out' => 'check_out', 'break out' => 'break_out', 'break in' => 'break_in'];
 
         foreach ($active->values() as $index => $employee) {
-            $biometricId = (string) (1001 + $index);
-            EmployeeBiometricId::create(['employee_id' => $employee->id, 'biometric_id' => $biometricId]);
-            [$device, $serial] = $devices[$locationKeys[$employee->location_id] ?? 'main'];
+            $deviceUserId = (string) (1001 + $index);
+            $device = $devices[$locationKeys[$employee->location_id] ?? 'main'];
+            BiometricEnrollment::create(['attendance_device_id' => $device->id, 'employee_id' => $employee->id, 'device_user_id' => $deviceUserId, 'enrolled_on' => $from->toDateString()]);
+            $events = [];
 
             foreach (CarbonPeriod::create($from, $to) as $date) {
                 $day = $schedules->resolveDay($assignments->get($employee->id, collect()), $date, $holidayService->matchDate($holidays, $date));
@@ -844,35 +863,18 @@ class AcmeDemoSeeder extends Seeder
                 }
 
                 foreach ($punches as [$direction, $at]) {
-                    EmployeeAttendanceLog::create([
-                        'employee_id' => $biometricId,
-                        'auth_date_time' => $at->toDateTimeString(),
-                        'auth_date' => $at->toDateString(),
-                        'auth_time' => $at->toTimeString(),
-                        'direction' => $direction,
-                        'device_name' => $device,
-                        'device_sn' => $serial,
-                        'person_name' => strtoupper($employee->emp_last_name.', '.$employee->emp_first_name),
-                        'card_no' => 'C'.$biometricId,
-                    ]);
+                    $raw = $at->toDateTimeString();
+                    $events[] = new NormalizedEvent($deviceUserId, null, $raw, EventTime::toUtc($raw, $timezone), $types[$direction]);
                 }
             }
+
+            $ingestion->ingest($device, $events, 'simulator', recalculate: false);
         }
 
-        // A visitor card that was never registered to an employee.
-        foreach (['2026-09-16 09:12:44', '2026-09-16 15:48:10'] as $i => $at) {
-            $time = Carbon::parse($at);
-            EmployeeAttendanceLog::create([
-                'employee_id' => '9001',
-                'auth_date_time' => $time->toDateTimeString(),
-                'auth_date' => $time->toDateString(),
-                'auth_time' => $time->toTimeString(),
-                'direction' => $i === 0 ? 'check in' : 'check out',
-                'device_name' => 'Main Lobby Terminal',
-                'device_sn' => 'ZK-MAIN-0101',
-                'person_name' => 'VISITOR',
-                'card_no' => 'V9001',
-            ]);
-        }
+        // A visitor card that was never mapped to an employee (kept as an unmapped event).
+        $ingestion->ingest($devices['main'], collect([['2026-09-16 09:12:44', 'check_in'], ['2026-09-16 15:48:10', 'check_out']])
+            ->map(fn ($p) => new NormalizedEvent('9001', null, $p[0], EventTime::toUtc($p[0], $timezone), $p[1]))->all(), 'simulator', recalculate: false);
+
+        app(AttendanceRecalculator::class)->recalculateRange($active->pluck('id')->all(), $from->toDateString(), $to->toDateString());
     }
 }

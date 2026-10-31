@@ -17,8 +17,6 @@ class EmployeeTableResource extends JsonResource
         return [
             'id' => $this->id,
             'employee_number' => $this->employee_number,
-            // 'biometrics_id' => $this->biometrics_id,
-            'biometric_id' => $this->biometricIds->pluck('biometric_id'),
             'fullname_desc' => $this->personalInformation->getFullNameAttributeDesc(),
             'department' => new DepartmentsResource($this->whenLoaded('department')),
             'employee_type' => $this->employee_type,

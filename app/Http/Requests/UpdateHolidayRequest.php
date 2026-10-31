@@ -24,6 +24,9 @@ class UpdateHolidayRequest extends FormRequest
             ],
             'date' => ['required', 'date'],
             'type' => ['required', 'string', 'in:regular,special_non_working,special_working,company'],
+            // Jurisdiction (blank = applies everywhere, the previous behavior).
+            'country_code' => ['nullable', 'string', 'regex:/^[A-Z]{2}$/'],
+            'subdivision_code' => ['nullable', 'string', 'max:10'],
             'is_paid' => ['sometimes', 'boolean'],
             'is_working_day' => ['sometimes', 'boolean'],
             'is_recurring' => ['sometimes', 'boolean'],

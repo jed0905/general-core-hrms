@@ -24,11 +24,6 @@ class UpdateEmployeeJobDetailsFormRequest extends FormRequest
 
         return [
             'date_hired' => 'required',
-            'biometrics_id' => 'nullable',
-            'biometrics_to_add' => 'nullable|array',
-            'biometrics_to_add.*' => 'nullable|string',
-            'biometrics_to_delete' => 'nullable|array',
-            'biometrics_to_delete.*' => 'nullable|integer|exists:employee_biometric_ids,id',
             'detailed_at' => 'nullable|exists:operating_units,id',
             'operating_unit_id' => 'required|exists:operating_units,id',
             'department_id' => 'nullable|exists:departments,id',

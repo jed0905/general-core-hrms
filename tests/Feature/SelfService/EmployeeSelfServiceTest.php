@@ -2,9 +2,8 @@
 
 namespace Tests\Feature\SelfService;
 
+use App\Models\AttendanceEvent;
 use App\Models\Employee;
-use App\Models\EmployeeAttendanceLog;
-use App\Models\EmployeeBiometricId;
 use App\Models\EmployeeWorkSchedule;
 use App\Models\Shift;
 use App\Models\User;
@@ -12,6 +11,7 @@ use App\Models\WorkSchedule;
 use Inertia\Testing\AssertableInertia;
 use PHPUnit\Framework\Attributes\Test;
 use Spatie\Permission\Models\Role;
+use Tests\Concerns\RecordsAttendanceEvents;
 use Tests\Feature\Leave\LeaveTestCase;
 
 /**
@@ -20,6 +20,8 @@ use Tests\Feature\Leave\LeaveTestCase;
  */
 class EmployeeSelfServiceTest extends LeaveTestCase
 {
+    use RecordsAttendanceEvents;
+
     private User $me;
 
     private Employee $other;
@@ -161,24 +163,27 @@ class EmployeeSelfServiceTest extends LeaveTestCase
         $this->punch($this->employeeOf($this->me), 'BIO-ME', '08:01:00');
         $this->punch($this->other, 'BIO-OTHER', '07:30:00');
 
-        $range = ['from' => now()->startOfMonth()->toDateString(), 'to' => now()->endOfMonth()->toDateString()];
+        $range = ['date_from' => now()->startOfMonth()->toDateString(), 'date_to' => now()->toDateString()];
 
         $this->actingAs($this->me)
-            ->get(route('time.my-attendance.index', $range + ['employee_id' => 'BIO-OTHER']))
+            ->get(route('attendance.my.index', $range + ['employee_id' => $this->other->id]))
             ->assertOk()
             ->assertInertia(fn (AssertableInertia $page) => $page
-                ->component('app/Time/MyAttendance/Index', false)
-                ->where('logs.total', 1)
-                ->where('logs.data.0.auth_time', '08:01:00')
+                ->component('app/Attendance/My/Index', false)
+                ->has('events', 1)
+                ->where('events.0.event_type', 'check_in')
+                ->where('hasEnrollment', true)
                 ->where('can.export', true));
 
+        $this->assertSame(1, AttendanceEvent::where('employee_id', $this->employeeOf($this->me)->id)->count());
+
         $csv = $this->actingAs($this->me)
-            ->get(route('time.my-attendance.export', $range + ['employee_id' => $this->other->id]))
+            ->get(route('attendance.my.export', $range + ['employee_id' => $this->other->id]))
             ->assertOk()
             ->streamedContent();
 
-        $this->assertStringContainsString('08:01:00', $csv);
-        $this->assertStringNotContainsString('07:30:00', $csv);
+        $this->assertStringStartsWith('Date,', $csv);
+        $this->assertStringNotContainsString('07:30', $csv);
     }
 
     #[Test]
@@ -186,9 +191,9 @@ class EmployeeSelfServiceTest extends LeaveTestCase
     {
         $this->punch($this->other, 'BIO-OTHER', '07:30:00');
 
-        // No device id of their own: nothing is shown, not somebody else's punches.
-        $this->actingAs($this->me)->get(route('time.my-attendance.index'))
-            ->assertInertia(fn (AssertableInertia $page) => $page->where('logs.total', 0)->where('hasBiometricId', false));
+        // No device mapping of their own: nothing is shown, not somebody else's punches.
+        $this->actingAs($this->me)->get(route('attendance.my.index'))
+            ->assertInertia(fn (AssertableInertia $page) => $page->has('events', 0)->has('days', 0)->where('hasEnrollment', false));
 
         $this->assertFalse($this->me->can('viewAttendance', $this->other));
         $this->assertFalse($this->me->can('exportAttendance', $this->other));
@@ -200,10 +205,10 @@ class EmployeeSelfServiceTest extends LeaveTestCase
         $role = Role::create(['name' => 'view_only_attendance', 'guard_name' => 'web'])->givePermissionTo('attendance.view_own');
         $user = User::factory()->create(['employee_id' => Employee::factory()->create()->id])->assignRole($role);
 
-        $this->actingAs($user)->get(route('time.my-attendance.index'))
+        $this->actingAs($user)->get(route('attendance.my.index'))
             ->assertOk()
             ->assertInertia(fn (AssertableInertia $page) => $page->where('can.export', false));
-        $this->actingAs($user)->get(route('time.my-attendance.export'))->assertForbidden();
+        $this->actingAs($user)->get(route('attendance.my.export'))->assertForbidden();
     }
 
     // ---------------------------------------------------------------
@@ -287,7 +292,7 @@ class EmployeeSelfServiceTest extends LeaveTestCase
 
         $this->actingAs($user)->get(route('people.my-profile.show'))->assertOk();
         $this->actingAs($user)->get(route('time.my-schedule.index'))->assertOk();
-        $this->actingAs($user)->get(route('time.my-attendance.index'))->assertForbidden();
+        $this->actingAs($user)->get(route('attendance.my.index'))->assertForbidden();
         $this->actingAs($user)->get(route('leave.applications.index'))->assertForbidden();
     }
 
@@ -309,8 +314,8 @@ class EmployeeSelfServiceTest extends LeaveTestCase
             ['get', route('people.my-profile.show')],
             ['put', route('people.my-profile.update')],
             ['get', route('time.my-schedule.index')],
-            ['get', route('time.my-attendance.index')],
-            ['get', route('time.my-attendance.export')],
+            ['get', route('attendance.my.index')],
+            ['get', route('attendance.my.export')],
         ] as [$method, $url]) {
             $this->actingAs($user)->{$method}($url)->assertForbidden();
         }
@@ -350,20 +355,8 @@ class EmployeeSelfServiceTest extends LeaveTestCase
         ]);
     }
 
-    private function punch(Employee $employee, string $biometricId, string $time): void
+    private function punch(Employee $employee, string $deviceUserId, string $time): void
     {
-        EmployeeBiometricId::firstOrCreate(['employee_id' => $employee->id, 'biometric_id' => $biometricId]);
-
-        EmployeeAttendanceLog::create([
-            'employee_id' => $biometricId,
-            'auth_date_time' => now()->startOfMonth()->addDays(2)->setTimeFromTimeString($time),
-            'auth_date' => now()->startOfMonth()->addDays(2)->toDateString(),
-            'auth_time' => $time,
-            'direction' => 'in',
-            'device_name' => 'Lobby',
-            'device_sn' => 'SN-1',
-            'person_name' => $employee->emp_first_name,
-            'card_no' => '0',
-        ]);
+        $this->recordPunch($employee, $deviceUserId, now()->startOfMonth()->addDays(2)->toDateString().' '.$time);
     }
 }

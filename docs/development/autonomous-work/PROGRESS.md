@@ -55,3 +55,51 @@
 - `.claude/skills/hrms-payroll/SKILL.md` "Current state" still describes payroll as not built; update it when convenient.
 
 Note: during the session the repository owner committed the pre-existing changes (`956a454 updated claude skills`, author JED). The agent made no commits; all payroll work is uncommitted in the working tree.
+
+---
+# Attendance module (started 2026-10-30)
+
+## Part A: payroll committed
+- Verified before commit: `tests/Unit/Payroll` OK (22 tests, 38 assertions); `tests/Feature/Payroll` OK (80 tests, 582 assertions); pint passes on all payroll files (pre-existing unrelated models fail pint and were not touched); `npm run build` OK; the 9 payroll migrations still **Pending** on `general_hrms` (never run by the agent).
+- Commit **`a498209`** `feat(payroll): implement global payroll core with Philippines localization framework` (162 files, staged by explicit path; no `.env`, build output, DB files). Not pushed. Working tree clean afterwards.
+
+## Phase 0: attendance audit (complete)
+- Found prior Hikvision work on branch `feature/hikvision-api` (`3203d23`); see `docs/development/attendance/ARCHITECTURE.md` §1.
+
+## Attendance phases 1–9 (complete; hardware verification pending)
+- **Phase 1 foundation**: migrations `2026_10_31_000001`…`000005` (devices, connectors, sync runs, enrollments, raw events, policies, roster, days, adjustments, period summaries, audit log, holiday jurisdiction + `pay_groups.time_source`, permissions); models; `AttendanceScope`; permissions in migration + seeder (`ATTENDANCE_PERMISSIONS/GRANTS`).
+- **Phase 2 devices**: `Devices/Contracts/DeviceAdapter`, `DeviceAdapterRegistry`, `config/attendance.php`, `AttendanceDeviceService`, `DeviceSyncService` (retries, lock, overlap window, status), device pages.
+- **Phase 3 simulator + ingestion**: `SimulatorAdapter`, `ManualAdapter`, `EventIngestionService` (idempotent, unmatched/invalid kept, remap), `AttendanceEventEntryService` (manual, CSV, legacy table), `attendance:sync-devices` (scheduled every 5 min).
+- **Phase 4 Hikvision**: `HikvisionIsapiAdapter` (pull with pagination, device info, clock drift, push parsing), `HikvisionPushController`, `HIKVISION_DS_K1T321.md`.
+- **Phase 5 ZKTeco**: `ZktecoAdmsAdapter` (PUSH/ADMS ATTLOG, handshake without templates), `ZktecoPushController`, `ZKTECO_INTEGRATION.md`; TCP/SDK not implemented.
+- **Phase 6 engine**: `Engine/DayContextResolver`, `DayContext`, `AttendanceCalculator`, `AttendanceRecalculator`; roster, holidays by jurisdiction, approved leave, adjustments (`AttendanceAdjustmentService`, `AttendanceAdjustmentPolicy`).
+- **Phase 7 UI & reports**: 11 pages under `resources/js/pages/app/Attendance`, `components/Attendance/AdjustmentDialog.vue`, `utils/attendance.js`, `mixins/attendancePage.js`, sidebar group; reports `attendance-daily`, `attendance-totals`, `attendance-device-sync`; holiday form gains country/region fields (Time module, additive).
+- **Phase 8 payroll**: `AttendancePeriodService`, `AttendanceTimeInputProvider` (bound as payroll's `TimeInputProvider`; manual groups unchanged), contracts `MapsAttendanceToPremiums` + `ValidatesTimeInputs`, event `PayrollRunFinalized` + listener `LockConsumedAttendanceSummaries`; PH localization maps attendance buckets.
+- **Phase 9 hardening**: connector (`attendance:connector`, HMAC + nonce, spool, no re-spooling), `ConnectorEventController`, UTC instant cast (`App\Casts\UtcDateTime`), docs in `docs/development/attendance/*`.
+- Shared files touched (additive): `AppServiceProvider`, `AuthServiceProvider` (policy + 3 gates), `EventServiceProvider`, `RouteServiceProvider` (2 route files), `Console/Kernel` (schedule), `ReportRegistry` (3 reports + catalog honors per-report permission), `SidebarLayout.vue`, `Holiday` model + holiday requests/service/page, `PayGroup` model/request + payroll setup page, `PayrollCalculator` (generic `ValidatesTimeInputs` hook), `PayrollRunService` (dispatches `PayrollRunFinalized`), PH localization (mapping method), XX test fixture.
+- Pint was accidentally run on all of `app/Events`; the three unrelated files it reformatted were restored with `git restore` (no other changes in them).
+- Not committed (only the payroll commit was requested).
+
+## Next
+- Hardware verification on the customer's DS-K1T321 (checklist in `HIKVISION_DS_K1T321.md` §4) and on a ZKTeco PUSH device.
+- Run `php artisan migrate` (15 pending migrations: payroll then attendance) on the dev DB when approved, then `php artisan event:cache`.
+- ~~Decide whether Time Logs / My Attendance should read the new tables (BLOCKER A-B1).~~ Done 2026-10-31 (legacy replacement below).
+
+## Attendance: legacy replacement and pre-commit audit (2026-10-31)
+- Decision: the attendance module is the only attendance architecture (D A15).
+- Replaced: Time Logs → Attendance Raw Logs (old URL redirects); My Attendance → `attendance.my.*` (calculated days, punches, corrections, CSV); employee dashboard card and the Attendance Log report now read `attendance_events`/`attendance_days`; Raw Attendance Summary report removed (Daily Attendance / Attendance Totals); sidebar updated.
+- Removed: legacy services/controllers/requests/pages for Time Logs and My Attendance, the unrouted DTR suite, the broken scheduled `CheckTardinessJob` + `TardinessMail`, models `EmployeeAttendanceLog`/`EmployeeBiometricId`, the web "import legacy" action, a dangling route import, unused permissions `attendance.update/delete/reprocess` (migration `2026_10_31_000006`).
+- Added: `App\Services\Attendance\EmployeeAttendanceService` (shared by HR history, self-service, dashboard), `AttendanceHistoryRequest`, `LegacyAttendanceImporter` + `attendance:import-legacy-logs` (dry run by default, timezone required, idempotent, legacy table read-only), connector entity/location scope check, `tests/Concerns/RecordsAttendanceEvents`, `LegacyAttendanceTransitionTest`, payroll manual-inputs test; demo seeder now seeds simulated devices, mappings and events through the pipeline.
+- Legacy table was first kept as a read-only archive (superseded by the complete removal below).
+- All migrations verified on a scratch MySQL database `general_hrms_attendance_scratch` (migrate, rollback of the 15 new ones, seed roles, re-migrate). The dev DB `general_hrms` still has the 15 migrations pending.
+- Audit summary: `attendance/PRE_COMMIT_AUDIT.md`. Not committed.
+
+## Attendance: complete legacy removal (2026-10-31, final)
+- Owner confirmed `general_hrms` holds only test/demo data and authorized removing the legacy attendance system.
+- Removed: `attendance:import-legacy-logs` + `LegacyAttendanceImporter`, the `legacy` event source, the old-URL redirects, biometric-ID fields of the unrouted legacy employee edit (`JobForm.vue`, three resources, `UpdateEmployeeJobDetailsFormRequest`), dangling `LeaveService` import, archive/cutover docs (`LEGACY_TRANSITION.md` → `LEGACY_REMOVAL.md` record).
+- `LeaveApplicationFormRequest` (unused) wellness rule now reads `attendance_events`.
+- Migration `2026_10_31_000006_remove_legacy_attendance` drops `employee_attendance_logs` / `employee_biometric_ids` and removes the unused permissions (replaces the uncommitted permissions-only migration).
+- CLAUDE.md attendance section updated (it described the removed tables as current).
+- Tests: `LegacyAttendanceRemovalTest` (routes gone, tables/permissions gone, no code references legacy names).
+- Verified on scratch MySQL `general_hrms_attendance_scratch` (migrate/rollback/migrate) and new `general_hrms_cleanup_scratch` (from empty + roles + demo seeder). Dev DB untouched. Not committed.
+

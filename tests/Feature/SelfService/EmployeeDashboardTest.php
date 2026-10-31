@@ -3,8 +3,6 @@
 namespace Tests\Feature\SelfService;
 
 use App\Models\Employee;
-use App\Models\EmployeeAttendanceLog;
-use App\Models\EmployeeBiometricId;
 use App\Models\EmployeeWorkSchedule;
 use App\Models\Holiday;
 use App\Models\LeaveApplication;
@@ -15,6 +13,7 @@ use Carbon\Carbon;
 use Inertia\Testing\AssertableInertia;
 use PHPUnit\Framework\Attributes\Test;
 use Spatie\Permission\Models\Role;
+use Tests\Concerns\RecordsAttendanceEvents;
 use Tests\Feature\Leave\LeaveTestCase;
 
 /**
@@ -23,6 +22,8 @@ use Tests\Feature\Leave\LeaveTestCase;
  */
 class EmployeeDashboardTest extends LeaveTestCase
 {
+    use RecordsAttendanceEvents;
+
     private const EMPLOYEE_DASHBOARD = 'app/Dashboard/MyDashboard/Index';
 
     private const HR_DASHBOARD = 'app/Dashboard';
@@ -159,7 +160,8 @@ class EmployeeDashboardTest extends LeaveTestCase
                 ->where('attendance.status', 'timed_in')
                 ->where('attendance.first_in', '08:02:00')
                 ->has('attendance.recent', 1)
-                ->where('attendance.recent.0.auth_time', '08:02:00'));
+                ->where('attendance.recent.0.time', '08:02:00')
+                ->where('attendance.has_biometric_id', true));
     }
 
     #[Test]
@@ -331,20 +333,8 @@ class EmployeeDashboardTest extends LeaveTestCase
         ]);
     }
 
-    private function punch(Employee $employee, string $biometricId, string $time): void
+    private function punch(Employee $employee, string $deviceUserId, string $time): void
     {
-        EmployeeBiometricId::create(['employee_id' => $employee->id, 'biometric_id' => $biometricId]);
-
-        EmployeeAttendanceLog::create([
-            'employee_id' => $biometricId,
-            'auth_date_time' => '2026-10-07 '.$time,
-            'auth_date' => '2026-10-07',
-            'auth_time' => $time,
-            'direction' => 'in',
-            'device_name' => 'Lobby',
-            'device_sn' => 'SN-1',
-            'person_name' => $employee->emp_first_name,
-            'card_no' => '0',
-        ]);
+        $this->recordPunch($employee, $deviceUserId, '2026-10-07 '.$time);
     }
 }

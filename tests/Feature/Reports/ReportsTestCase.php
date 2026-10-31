@@ -4,8 +4,6 @@ namespace Tests\Feature\Reports;
 
 use App\Models\Department;
 use App\Models\Employee;
-use App\Models\EmployeeAttendanceLog;
-use App\Models\EmployeeBiometricId;
 use App\Models\EmployeeLeaveBalance;
 use App\Models\EmployeeWorkSchedule;
 use App\Models\EmploymentStatus;
@@ -16,6 +14,7 @@ use App\Models\User;
 use App\Models\WorkSchedule;
 use App\Services\Reports\ReportRegistry;
 use Database\Seeders\EmployeeMovementTypeSeeder;
+use Tests\Concerns\RecordsAttendanceEvents;
 use Tests\Feature\Leave\LeaveTestCase;
 
 /**
@@ -23,6 +22,8 @@ use Tests\Feature\Leave\LeaveTestCase;
  */
 abstract class ReportsTestCase extends LeaveTestCase
 {
+    use RecordsAttendanceEvents;
+
     protected Department $it;
 
     protected Department $dev;
@@ -92,23 +93,9 @@ abstract class ReportsTestCase extends LeaveTestCase
         EmployeeWorkSchedule::create(['employee_id' => $employee->id, 'work_schedule_id' => $schedule->id, 'effective_from' => '2026-01-01', 'is_primary' => true]);
     }
 
-    protected function punch(?Employee $employee, string $biometricId, string $date, string $time, string $direction = 'in'): void
+    protected function punch(?Employee $employee, string $deviceUserId, string $date, string $time, string $direction = 'in'): void
     {
-        if ($employee) {
-            EmployeeBiometricId::firstOrCreate(['biometric_id' => $biometricId], ['employee_id' => $employee->id]);
-        }
-
-        EmployeeAttendanceLog::create([
-            'employee_id' => $biometricId,
-            'auth_date_time' => "{$date} {$time}",
-            'auth_date' => $date,
-            'auth_time' => $time,
-            'direction' => $direction,
-            'device_name' => 'Lobby',
-            'device_sn' => 'SN-001',
-            'person_name' => $employee?->emp_first_name ?? 'Unknown',
-            'card_no' => '0',
-        ]);
+        $this->recordPunch($employee, $deviceUserId, "{$date} {$time}", $direction === 'out' ? 'check_out' : 'check_in');
     }
 
     protected function approvedLeave(Employee $employee, array $dates, string $status = LeaveApplication::STATUS_APPROVED): LeaveApplication

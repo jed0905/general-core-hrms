@@ -309,6 +309,28 @@
                 />
               </v-col>
 
+              <v-col cols="6" sm="3">
+                <v-text-field
+                  v-model="form.country_code"
+                  label="Country (ISO, blank = all)"
+                  variant="outlined"
+                  density="compact"
+                  maxlength="2"
+                  :error-messages="form.errors.country_code"
+                  @update:model-value="(v) => (form.country_code = (v || '').toUpperCase())"
+                />
+              </v-col>
+
+              <v-col cols="6" sm="3">
+                <v-text-field
+                  v-model="form.subdivision_code"
+                  label="Region (blank = all)"
+                  variant="outlined"
+                  density="compact"
+                  :error-messages="form.errors.subdivision_code"
+                />
+              </v-col>
+
               <v-col cols="12" sm="6">
                 <v-select
                   v-model="form.status"
@@ -487,6 +509,8 @@ export default {
         code: "",
         date: new Date().toISOString().substring(0, 10),
         type: "regular",
+        country_code: "",
+        subdivision_code: "",
         is_paid: true,
         is_working_day: false,
         is_recurring: false,
@@ -584,6 +608,8 @@ export default {
       this.form.clearErrors();
       this.form.date = new Date().toISOString().substring(0, 10);
       this.form.type = "regular";
+      this.form.country_code = "";
+      this.form.subdivision_code = "";
       this.form.status = "active";
       this.form.is_paid = true;
       this.form.is_working_day = false;
@@ -599,6 +625,8 @@ export default {
       this.form.code = item.code || "";
       this.form.date = item.date;
       this.form.type = item.type;
+      this.form.country_code = item.country_code || "";
+      this.form.subdivision_code = item.subdivision_code || "";
       this.form.is_paid = Boolean(item.is_paid);
       this.form.is_working_day = Boolean(item.is_working_day);
       this.form.is_recurring = Boolean(item.is_recurring);
